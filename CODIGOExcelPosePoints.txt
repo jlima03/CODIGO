@@ -1,0 +1,58 @@
+import cv2
+import mediapipe as mp
+import pandas as pd
+
+video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba2_left.mp4"
+output_file = r"C:\Users\joaov\Desktop\TFM\pose_points.xlsx"
+
+cap = cv2.VideoCapture(video_path)
+
+if not cap.isOpened():
+    print("Erro: vídeo não abriu")
+    exit()
+
+fps = cap.get(cv2.CAP_PROP_FPS)
+frame_idx = 0
+
+mp_pose = mp.solutions.pose
+data = []
+
+with mp_pose.Pose() as pose:
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+
+        if not ret or frame is None:
+            break
+
+        results = pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+        if results.pose_landmarks:
+            lm = results.pose_landmarks.landmark
+
+            time_sec = round(frame_idx / fps, 3)
+
+            data.append([
+                time_sec,
+                lm[mp_pose.PoseLandmark.RIGHT_HIP].x,
+                lm[mp_pose.PoseLandmark.RIGHT_HIP].y,
+                lm[mp_pose.PoseLandmark.RIGHT_KNEE].x,
+                lm[mp_pose.PoseLandmark.RIGHT_KNEE].y,
+                lm[mp_pose.PoseLandmark.RIGHT_ANKLE].x,
+                lm[mp_pose.PoseLandmark.RIGHT_ANKLE].y,
+            ])
+
+        frame_idx += 1
+
+cap.release()
+
+df = pd.DataFrame(data, columns=[
+    "time_s",
+    "hip_x", "hip_y",
+    "knee_x", "knee_y",
+    "ankle_x", "ankle_y"
+])
+
+df.to_excel(output_file, index=False)
+
+print("GUARDADO:", output_file)

@@ -1,0 +1,46 @@
+import cv2
+import mediapipe as mp
+
+mp_pose = mp.solutions.pose
+cap = cv2.VideoCapture(r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba2_left.mp4")
+
+fps = cap.get(cv2.CAP_PROP_FPS)
+frame_idx = 0
+
+file = open(r"C:\Users\joaov\Desktop\TFM\pose_points.txt", "w")
+
+with mp_pose.Pose() as pose:
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        results = pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+        time_sec = round(frame_idx / fps, 3)
+
+        if results.pose_landmarks:
+            lm = results.pose_landmarks.landmark
+
+            points = {
+                "hip_R": mp_pose.PoseLandmark.RIGHT_HIP,
+                "knee_R": mp_pose.PoseLandmark.RIGHT_KNEE,
+                "ankle_R": mp_pose.PoseLandmark.RIGHT_ANKLE,
+                "hip_L": mp_pose.PoseLandmark.LEFT_HIP,
+                "knee_L": mp_pose.PoseLandmark.LEFT_KNEE,
+                "ankle_L": mp_pose.PoseLandmark.LEFT_ANKLE,
+            }
+
+            line = f"{time_sec}s "
+
+            for name, idx in points.items():
+                p = lm[idx]
+                line += f"{name}({p.x:.4f},{p.y:.4f}) "
+
+            file.write(line.strip() + "\n")
+
+        frame_idx += 1
+
+cap.release()
+file.close()
