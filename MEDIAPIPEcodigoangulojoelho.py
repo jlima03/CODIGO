@@ -67,7 +67,7 @@ cap.release()
 df = pd.DataFrame(data, columns=["time_s", "angle_deg"])
 
 df.to_excel(
-    r"C:\Users\joaov\Desktop\TFM\angles.xlsx",
+    r"C:\Users\joaov\Desktop\TFM\angles.csv",
     index=False
 )
 
