@@ -16,11 +16,11 @@ frame_idx = 0
 
 #a-hip b-knee c-anke NTENHOCRTZVERI
 def angle(a, b, c):
-    ba = (a[0] - b[0], a[1] - b[1])
-    bc = (c[0] - b[0], c[1] - b[1])
+    ba = (a[0] - b[0], a[1] - b[1]) #a[0]->x  a[1]->y
+    bc = (c[0] - b[0], c[1] - b[1])#cx-bx,cy-by
 
     cos_angle = (ba[0]*bc[0] + ba[1]*bc[1]) / (
-        math.sqrt(ba[0]**2 + ba[1]**2) * math.sqrt(bc[0]**2 + bc[1]**2)
+        math.sqrt(ba[0]**2 + ba[1]**2) * math.sqrt(bc[0]**2 + bc[1]**2)#((BA*BC) / (|BA|+|BC|))
     )
 
     return math.degrees(math.acos(cos_angle))
@@ -33,7 +33,7 @@ while cap.isOpened():
 
     results = model(frame, verbose=False)
 
-    if results[0].keypoints is not None:
+    if results[0].keypoints is not None:    #modelo encontra pontos numa pessoa->continue
         kpts = results[0].keypoints.xy[0].cpu().numpy()
 
         # YOLO pose indices:
@@ -50,13 +50,13 @@ while cap.isOpened():
 
         data.append([time_sec, ang])
 
-    frame_idx += 1
+    frame_idx += 1  #passa ao prox frame
 
 cap.release()
 
 # guardar Excel
 df = pd.DataFrame(data, columns=["time_sec", "knee_angle"])
 output_file = r"C:\Users\joaov\Desktop\TFM\knee_angles.csv"
-df.to_excel(output_file, index=False)
+df.to_csv(output_file, index=False)
 
 print("GUARDADO:", output_file)
