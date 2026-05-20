@@ -67,8 +67,8 @@ cap.release()
 df = pd.DataFrame(data, columns=["time_s", "angle_deg"])
 
 df.to_excel(
-    r"C:\Users\joaov\Desktop\TFM\angles.csv",
+    r"C:\Users\joaov\Desktop\TFM\MEDIAPIPEAnguloJoelhoPrueba2Left.xlsx",
     index=False
 )
 
-print("Excel guardado")
+print("excel guardado")
