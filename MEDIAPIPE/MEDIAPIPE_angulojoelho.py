@@ -17,7 +17,7 @@ def angle(hip, knee, ankle):
 mp_pose = mp.solutions.pose
 
 cap = cv2.VideoCapture(
-    r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba2_left.mp4"
+    r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba8_left.mp4"
 )
 
 fps = cap.get(cv2.CAP_PROP_FPS)
@@ -54,20 +54,35 @@ with mp_pose.Pose() as pose:
                 lm[mp_pose.PoseLandmark.RIGHT_ANKLE].y
             )
 
+            left_ankle = (
+                lm[mp_pose.PoseLandmark.LEFT_ANKLE].x,
+                lm[mp_pose.PoseLandmark.LEFT_ANKLE].y
+            )
+
+            right_ankle = (
+                lm[mp_pose.PoseLandmark.RIGHT_ANKLE].x,
+                lm[mp_pose.PoseLandmark.RIGHT_ANKLE].y
+            )
+
+            ankle_distance = math.sqrt(
+                (left_ankle[0] - right_ankle[0])**2 +
+                (left_ankle[1] - right_ankle[1])**2
+            )
+
             ang = angle(hip, knee, ankle)
 
             time_sec = round(frame_idx / fps, 3)
 
-            data.append([time_sec, ang])
+            data.append([time_sec, ang, ankle_distance])
 
         frame_idx += 1
 
 cap.release()
 
-df = pd.DataFrame(data, columns=["time_s", "angle_deg"])
+df = pd.DataFrame(data, columns=["time_s", "angle_deg", "ankle_distance"])
 
 df.to_excel(
-    r"C:\Users\joaov\Desktop\TFM\MEDIAPIPEAnguloJoelhoPrueba2Left.xlsx",
+    r"C:\Users\joaov\Desktop\TFM\MEDIAPIPEAnguloJoelhoPrueba8Left.xlsx",
     index=False
 )
 
