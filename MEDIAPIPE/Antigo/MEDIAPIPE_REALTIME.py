@@ -10,7 +10,7 @@ mp_draw = mp.solutions.drawing_utils
 
 pose = mp_pose.Pose()
 
-video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba8_left.mp4"
+video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba2_left.mp4"
 
 cap = cv2.VideoCapture(video_path)
 

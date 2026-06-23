@@ -128,32 +128,84 @@ peaks, _ = find_peaks(
     prominence=0.01            # ignora ruído pequeno
 )
 
+import numpy as np
+from scipy.interpolate import interp1d
+
+knee_cycles = []
+
+#funcao normalizacao de 51 pontos
+
+def normalize(signal, n=51):
+    x = np.linspace(0, 1, len(signal))
+    f = interp1d(x, signal, kind="linear")
+    x_new = np.linspace(0, 1, n)
+    return f(x_new)
+
+for i in range(len(peaks) - 1):
+
+    start = peaks[i]
+    end = peaks[i + 1]
+
+    knee_stride = df["knee_smooth"].iloc[start:end].values
+
+    if len(knee_stride) < 10:
+        continue
+
+    knee_norm = normalize(knee_stride)
+
+    knee_cycles.append(knee_norm)
+
+knee_cycles = np.array(knee_cycles)
+
+knee_mean = np.mean(knee_cycles, axis=0)
+knee_std = np.std(knee_cycles, axis=0)
+
 df["is_peak"] = 0
 df.loc[peaks, "is_peak"] = 1
 
 #----------------------------------PLOTS
 
-plt.figure(figsize=(12,5))
+#plt.figure(figsize=(12,5))
 
-plt.plot(df["time_sec"], df["ankle_smooth"], label="Ankle smooth")
+#plt.plot(df["time_sec"], df["ankle_smooth"], label="Ankle smooth")
 
-plt.scatter(
-    df["time_sec"][peaks],
-    df["ankle_smooth"][peaks],
-    color="red",
-    label="Peaks"
+#plt.scatter(
+#    df["time_sec"][peaks],
+#    df["ankle_smooth"][peaks],
+#    color="red",
+#    label="Peaks"
+#)
+
+#plt.xlabel("Time (s)")
+#plt.ylabel("Ankle distance")
+#plt.legend()
+#plt.tight_layout()
+#plt.xlim(0, 10)  # mostra só os primeiros 10 segundos
+#plt.savefig(r"C:\Users\joaov\Desktop\TFM\FotoBolasVermelhas1.png")
+#plt.show()
+#lt.close()
+
+
+plt.figure(figsize=(10,5))
+
+x = np.linspace(0, 100, 51)
+
+plt.plot(x, knee_mean, label="Mean knee", color="blue")
+plt.fill_between(
+    x,
+    knee_mean - knee_std,
+    knee_mean + knee_std,
+    alpha=0.2,
+    color="blue"
 )
 
-plt.xlabel("Time (s)")
-plt.ylabel("Ankle distance")
+plt.xlabel("% gait cycle")
+plt.ylabel("Knee angle")
+plt.title("Normalized gait cycles")
 plt.legend()
-plt.tight_layout()
-plt.xlim(0, 10)  # mostra só os primeiros 10 segundos
-plt.savefig(r"C:\Users\joaov\Desktop\TFM\FotoTeste1.png")
+plt.grid()
+
+plt.savefig(r"C:\Users\joaov\Desktop\TFM\knee_normalized.png")
 plt.show()
-plt.close()
-
-
-
 
 print("Done")
