@@ -140,21 +140,11 @@ df_vicon = pd.read_excel(
 
 
 vicon_angles = []
-vicon_ankle_dist = []
+
 
 for i in range(len(df_vicon)):
 
-    right_ankle = (
-    df_vicon["RAJC_X"].iloc[i],
-    df_vicon["RAJC_Y"].iloc[i],
-    df_vicon["RAJC_Z"].iloc[i]
-)
-
-    left_ankle = (
-    df_vicon["LAJC_X"].iloc[i],
-    df_vicon["LAJC_Y"].iloc[i],
-    df_vicon["LAJC_Z"].iloc[i]
-)
+  
 
     knee = (
     df_vicon["RKJC_X"].iloc[i],
@@ -198,29 +188,13 @@ for i in range(len(df_vicon)):
     
     vicon_angles.append(ang)
 
-    #CALCULO DIST ANKLES NO VICON
-    ankle_dist = np.sqrt(
-    (right_ankle[0] - left_ankle[0])**2 +
-    (right_ankle[1] - left_ankle[1])**2 +
-    (right_ankle[2] - left_ankle[2])**2
-    )
-
-    vicon_ankle_dist.append(ankle_dist)
+    
 
 vicon_angles = np.array(vicon_angles)
 
-vicon_ankle_dist = np.array(vicon_ankle_dist)
-
-vicon_ankle_dist_smooth = butter_lowpass_filter(
-    vicon_ankle_dist,
-    cutoff=6,
-    fs=120,
-    order=4
-)
-
-vicon_peaks, _ = find_peaks(
-    vicon_ankle_dist_smooth,
-    distance=int(120 * 0.7),
+vicon_peaks, _ = find_peaks( 
+    vicon_angles,
+    distance=int(120 * 0.7), # 120 Hz do Vicon
     prominence=0.01
 )
 

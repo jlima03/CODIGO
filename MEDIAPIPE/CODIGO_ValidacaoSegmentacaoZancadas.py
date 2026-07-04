@@ -118,7 +118,7 @@ with mp_pose.Pose() as pose:
         frame_idx += 1  #prox frame
 
 cap.release()
-
+print(fps)
 
 
 # criar dataframe(tabela) ----------------
@@ -230,23 +230,70 @@ def zscore(x):
     return (x - np.mean(x)) / np.std(x)
 
 
-
-
-
-
-
-
-
 #-----------------------criar e visualizar maximos
-peaks, _ = find_peaks(
-    df["ankle_dist_smooth"],
-    distance=int(fps * 0.7),   # evita 2 picos na mesma zancada(faz q seja de 0.7 em 0.7 secs OU a cada 42 frames( 60*0.7=42 frames)
-    prominence=0.01          # ignora ruído pequeno
-)
+#peaks, _ = find_peaks(
+#    df["ankle_dist_smooth"],
+#    distance=int(fps * 0.7),   # evita 2 picos na mesma zancada(faz q seja de 0.7 em 0.7 secs OU a cada 42 frames( 60*0.7=42 frames)
+#    prominence=0.01          # ignora ruído pequeno
+#)
  
 
 
+def merge_close_peaks(signal, peaks, min_distance):
+    if len(peaks) == 0:
+        return np.array([])
 
+    merged = []
+    i = 0
+
+    while i < len(peaks):
+        current = peaks[i]
+
+        window = [current]
+        j = i + 1
+
+        while j < len(peaks) and (peaks[j] - current) < min_distance:
+            window.append(peaks[j])
+            j += 1
+
+        best_peak = max(window, key=lambda p: signal[p])
+        merged.append(best_peak)
+
+        i = j
+
+    return np.array(merged)
+
+
+#outro graf
+all_peaks, _ = find_peaks(df["ankle_dist_smooth"])
+plt.figure(figsize=(12,5))
+
+
+plt.plot(df["ankle_dist_smooth"], label="smooth")
+plt.scatter(
+    all_peaks,
+    df["ankle_dist_smooth"].iloc[all_peaks],
+    color="green",
+    s=15
+)
+all_peaks, _ = find_peaks(
+    df["ankle_dist_smooth"],
+    distance=int(fps * 0.7),
+    prominence=0.01
+)
+
+peaks = merge_close_peaks(
+    df["ankle_dist_smooth"].values,
+    all_peaks,
+    min_distance=int(fps * 0.01)  # 0.4–0.6s típico de marcha
+)
+plt.scatter(
+    peaks,
+    df["ankle_dist_smooth"].iloc[peaks],
+    color="red",
+    s=50
+)
+#grafico linhas
 plt.figure(figsize=(12,4))
 
 plt.plot(df["time_sec"], df["ankle_dist_smooth"])
@@ -261,27 +308,6 @@ for p in peaks:
     plt.axvline(df["time_sec"].iloc[p], color="red", alpha=0.3)
 
 plt.show()
-
-#outro graf
-all_peaks, _ = find_peaks(df["ankle_dist_smooth"])
-plt.figure(figsize=(12,5))
-
-
-plt.plot(df["ankle_dist_smooth"], label="smooth")
-plt.scatter(
-    all_peaks,
-    df["ankle_dist_smooth"].iloc[all_peaks],
-    color="green",
-    s=15
-)
-peaks = all_peaks[::2]
-plt.scatter(
-    peaks,
-    df["ankle_dist_smooth"].iloc[peaks],
-    color="red",
-    s=50
-)
-
 # ==========================================================
 # VALIDAÇÃO DA SEGMENTAÇÃO DAS ZANCADAS
 # ==========================================================
