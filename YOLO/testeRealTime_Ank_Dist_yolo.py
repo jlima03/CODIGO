@@ -1,5 +1,5 @@
 import cv2
-import mediapipe as mp
+from ultralytics import YOLO
 import math
 import pandas as pd
 import numpy as np
@@ -7,6 +7,9 @@ from scipy.interpolate import interp1d
 from scipy.signal import butter, filtfilt
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
+
+#carregar modelo pose
+model = YOLO("yolo11n-pose.pt")
 
 # ---------------- ANGLE ----------------
 
@@ -39,7 +42,7 @@ def angle3D(a, b, c):
 
 # Abrir video ----------------
 
-mp_pose = mp.solutions.pose
+
 
 video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba8_left.mp4"
 
@@ -62,61 +65,104 @@ def butter_lowpass_filter(data, cutoff=6, fs=60, order=4):
 
 # Processamento do video ----------------
 
-with mp_pose.Pose() as pose:
 
-    frame_idx = 0
+frame_idx = 0
     
+plt.ion()
 
-    while True: #Percorre todos os frames
+fig, ax = plt.subplots(figsize=(10,4))
+
+x_data = []
+y_data = []
+
+line, = ax.plot([], [], 'b-')
+
+ax.set_xlabel("Tempo (s)")
+ax.set_ylabel("Ankle distance")
+ax.set_title("YOLO - Ankle distance em tempo real")
+
+ax.set_xlim(0, 40)       # duração aproximada do vídeo (ajusta se necessário)
+ax.set_ylim(0, 250)      # ajusta conforme o teu vídeo
+
+plt.show(block=False)
+while True: #Percorre todos os frames
         ret, frame = cap.read() #ler frame
         if not ret:
             break
 
-        results = pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))#pose.process obtem keypoints, segunda parte converter para RGB(o q mediapipe usa)
+        results = model(frame, verbose=False)#obtem keypoints
 
-        if results.pose_landmarks:
+        result = results[0]
 
-            lm = results.pose_landmarks.landmark
+        
+        if result.keypoints is not None and len(result.keypoints.xy) > 0:
+
+            kp = result.keypoints.xy[0].cpu().numpy()
+
 
             # Extrair estes pontos (articulacoes)
-            RH = lm[mp_pose.PoseLandmark.RIGHT_HIP]
-            RK = lm[mp_pose.PoseLandmark.RIGHT_KNEE]
-            RA = lm[mp_pose.PoseLandmark.RIGHT_ANKLE]
-            RF = lm[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX]
-            RS = lm[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+            
+            RH = kp[12]
+            RK = kp[14]
+            RA = kp[16]
+            RS = kp[6]
+            LA = kp[15]
 
-            LA = lm[mp_pose.PoseLandmark.LEFT_ANKLE]
+            
             
 
-            hip = (RH.x, RH.y)
-            knee = (RK.x, RK.y)
-            ankle = (RA.x, RA.y)
-            foot = (RF.x, RF.y)
-            shoulder = (RS.x, RS.y)
+            hip = tuple(RH)
+            knee = tuple(RK)
+            ankle = tuple(RA)
+            shoulder = tuple(RS)
 
             # CALCuLAR angulo joelho ----------------
-            #ang = angle(hip, knee, ankle)
+            ang = angle(hip, knee, ankle)
 
             # CALCULAR angulo tornozelo ----------------
             #ang = angle(knee, ankle, foot)
 
             # CALCULAR angulo anca ----------------
-            ang = angle(shoulder, hip, knee)
+            #ang = angle(shoulder, hip, knee)
 
 
             #DISTANCIA TOBILHOS
-           # ankle_dist = math.sqrt(
-           #     (RA.x - LA.x)**2 + (RA.y - LA.y)**2 #formula distancia euclidiana: d = RAIZ[(x2-x1)^2 + (y2-y1)^2]
-           # )
-            ankle_dist = abs(RA.x - LA.x)
+            #ankle_dist = math.sqrt(
+            #     (RA[0] - LA[0])**2 + (RA[1] - LA[1])**2 #formula distancia euclidiana: d = RAIZ[(x2-x1)^2 + (y2-y1)^2]
+            #)
+
+            ankle_dist = abs(RA[0] - LA[0])
+
             # calc tempo ----------------
             time_sec = frame_idx / fps
+            
+            # atualizar gráfico
+            x_data.append(time_sec)
+            y_data.append(ankle_dist)
+
+            line.set_data(x_data, y_data)
+
+            ax.set_xlim(0, max(5, time_sec))
+
+            # Atualiza automaticamente o eixo Y
+            ax.set_ylim(
+                min(y_data)-10,
+                max(y_data)+10
+            )
+
+            fig.canvas.draw()
+            fig.canvas.flush_events()
+            
 
             # guardar estes dados ----------------
             data.append([time_sec, ang, ankle_dist])
 
 
         frame_idx += 1  #prox frame
+        cv2.imshow("Video", frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
 cap.release()
 
@@ -189,13 +235,13 @@ for i in range(len(df_vicon)):
 
 
     #CALCULAR ANG HIP VICON
-    ang = angle3D(shoulder, hip, knee)
+    #ang = angle3D(shoulder, hip, knee)
 
     #CALCULAR ANG ANKLE VICON
     #ang = angle3D(knee, ankle, toe)
 
     #CALCULAR ANG KNEE VICON
-    #ang = angle3D(hip, knee, ankle)
+    ang = angle3D(hip, knee, ankle)
     
     vicon_angles.append(ang)
 
@@ -268,7 +314,8 @@ peaks, _ = find_peaks(
     prominence=0.01            # ignora ruído pequeno
 )
 
-peaks = peaks[::2]  #divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
+#peaks = peaks[::2]  #divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
+peaks = peaks[1::2] #adicionar ali o 1 para ler os picos mais altos em vez de os mais baixos
 
 # Grafico ankle distance VICON-----------------
 
@@ -455,6 +502,11 @@ plt.xlabel("% gait cycle")
 plt.ylabel("Normalized angle (z-score)")
 plt.legend()
 plt.grid()
+plt.show()
+
+cap.release()
+cv2.destroyAllWindows()
+plt.ioff()
 plt.show()
 
 print("Done")
