@@ -224,7 +224,7 @@ vicon_peaks, _ = find_peaks(
     distance=int(120 * 0.7),
     prominence=0.01
 )
-#funcao normalizacao de 51 pontos
+#funcao normalizacao de 101/51 pontos
 
 def normalize(signal, n=101): #normalizar p 101 ou 51 pontos (como tfm manuel(51 pontos))
     signal = np.array(signal)
