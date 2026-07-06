@@ -494,7 +494,7 @@ plt.xlabel("Time (s)")
 plt.ylabel("Ankle distance")
 plt.legend()
 plt.tight_layout()
-plt.xlim(0, 10)  # mostra só os primeiros 10 segundos
+plt.xlim(0, 20)  # mostra só os primeiros 10 segundos
 plt.savefig(r"C:\Users\joaov\Desktop\TFM\FotoBolasVermelhas1.png")
 plt.show()
 plt.close()

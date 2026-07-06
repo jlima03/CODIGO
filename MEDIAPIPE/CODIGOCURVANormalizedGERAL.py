@@ -95,19 +95,20 @@ with mp_pose.Pose() as pose:
             shoulder = (RS.x, RS.y)
 
             # CALCuLAR angulo joelho ----------------
-            #ang = angle(hip, knee, ankle)
+            ang = angle(hip, knee, ankle)
 
             # CALCULAR angulo tornozelo ----------------
-            ang = angle(knee, ankle, foot)
+            #ang = angle(knee, ankle, foot)
 
             # CALCULAR angulo anca ----------------
             #ang = angle(shoulder, hip, knee)
 
 
             #DISTANCIA TOBILHOS
-            ankle_dist = math.sqrt(
-                (RA.x - LA.x)**2 + (RA.y - LA.y)**2 #formula distancia euclidiana: d = RAIZ[(x2-x1)^2 + (y2-y1)^2]
-            )
+           # ankle_dist = math.sqrt(
+           #     (RA.x - LA.x)**2 + (RA.y - LA.y)**2 #formula distancia euclidiana: d = RAIZ[(x2-x1)^2 + (y2-y1)^2]
+           # )
+            ankle_dist = abs(RA.x - LA.x)
             # calc tempo ----------------
             time_sec = frame_idx / fps
 
@@ -191,10 +192,10 @@ for i in range(len(df_vicon)):
     #ang = angle3D(shoulder, hip, knee)
 
     #CALCULAR ANG ANKLE VICON
-    ang = angle3D(knee, ankle, toe)
+    #ang = angle3D(knee, ankle, toe)
 
     #CALCULAR ANG KNEE VICON
-    #ang = angle3D(hip, knee, ankle)
+    ang = angle3D(hip, knee, ankle)
     
     vicon_angles.append(ang)
 
@@ -224,7 +225,7 @@ vicon_peaks, _ = find_peaks(
     prominence=0.01
 )
 
-def normalize(signal, n=51):
+def normalize(signal, n=101):
     signal = np.array(signal)
 
     x = np.linspace(0, 1, len(signal))
@@ -262,21 +263,98 @@ def zscore(x):
 
 
 
-
-
-
-
-
-
 #-----------------------criar e visualizar maximos
 peaks, _ = find_peaks(
     df["ankle_dist_smooth"],
-    distance=int(fps * 0.7),   # evita 2 picos na mesma zancada(faz q seja de 0.7 em 0.7 secs OU a cada 42 frames( 60*0.7=42 frames)
+    distance=int(fps * 0.3),   # evita 2 picos na mesma zancada(faz q seja de 0.7 em 0.7 secs OU a cada 42 frames( 60*0.7=42 frames)
     prominence=0.01            # ignora ruído pequeno
 )
 
+peaks = peaks[::2]
+
+# Grafico ankle distance VICON-----------------
 
 
+plt.figure(figsize=(12,5))
+
+plt.plot(
+    vicon_ankle_dist_smooth,
+    label="Vicon ankle distance"
+)
+
+plt.scatter(
+    vicon_peaks,
+    vicon_ankle_dist_smooth[vicon_peaks],
+    color="red",
+    s=50,
+    label="Detected peaks"
+)
+
+for p in vicon_peaks:
+    plt.axvline(
+        p,
+        color="red",
+        alpha=0.3
+    )
+
+plt.xlabel("Frame")
+plt.ylabel("Ankle distance")
+plt.title("Vicon gait segmentation")
+plt.legend()
+plt.grid()
+
+plt.show()
+#fim grafico vicon ank dist-----
+
+#grafico linhas-------------------
+plt.figure(figsize=(12,4))
+
+plt.plot(df["time_sec"], df["ankle_dist_smooth"])
+
+plt.scatter(
+    df["time_sec"][peaks],
+    df["ankle_dist_smooth"][peaks],
+    color="red"
+)
+
+for p in peaks:
+    plt.axvline(df["time_sec"].iloc[p], color="red", alpha=0.3)
+
+plt.show()
+#fim grafico linhas-----------
+
+all_peaks, _ = find_peaks(
+    df["ankle_dist_smooth"]
+)
+
+print(len(all_peaks))
+
+plt.figure(figsize=(12,4))
+
+plt.plot(df["time_sec"], df["ankle_dist_smooth"])
+
+plt.scatter(
+    df["time_sec"][all_peaks],
+    df["ankle_dist_smooth"][all_peaks],
+    color="green",
+    s=20,
+    label="all peaks"
+)
+
+plt.scatter(
+    df["time_sec"][peaks],
+    df["ankle_dist_smooth"][peaks],
+    color="red",
+    s=50,
+    label="selected peaks"
+)
+
+plt.legend()
+plt.show()
+
+
+print(peaks)
+print(np.diff(peaks))
 
 cycles = []
 
@@ -312,31 +390,6 @@ df.loc[peaks, "is_peak"] = 1
 
 
 
-#ALIGNMENT -----------------------------------------
-
-
-# garantir que ambos têm mesmo tamanho mínimo
-#min_len = min(len(df["angle_smooth"]), len(vicon_smooth))
-
-#media = df["angle_smooth"].values[:min_len]
-#vicon = vicon_smooth[:min_len]
-
-# usar peaks já calculados (MediaPipe)
-# e criar também peaks no Vicon (MESMO método)
-#peaks_vicon, _ = find_peaks(vicon, distance=int(120 * 0.7), prominence=0.01)
-
-# alinhar pelo primeiro pico comum
-#shift = peaks_vicon[0] - peaks[0]
-
-# corrigir desalinhamento
-#vicon_aligned = np.roll(vicon, -shift)
-
-# cortar zonas inválidas após shift
-#valid_len = min(len(media), len(vicon_aligned))
-
-#media = media[:valid_len]
-#vicon_aligned = vicon_aligned[:valid_len]
-
 #----------------------------------PLOTS
 #GRAFICO DIST ANKLES BOLAS VERMELHAS-------
 plt.figure(figsize=(12,5))
@@ -360,41 +413,18 @@ plt.show()
 plt.close()
 
 
-#plt.figure(figsize=(10,5))
-
-#x = np.linspace(0, 100, 51)
-#
-#plt.plot(x, mean, label="Mean", color="blue")     #GRAFICO FINAL
-#plt.fill_between(
-#    x,
-#    mean - std,   #Linha azul central
-#    mean + std,   #Area azul de cada zancada individual
-#    alpha=0.2,
-#    color="blue"
-#)
-
-#plt.xlabel("% gait cycle")
-#plt.ylabel("Angle (º)")
-#plt.title("Normalized gait cycles")
-#plt.legend()
-#plt.grid()
-
-#plt.savefig(r"C:\Users\joaov\Desktop\TFM\angle_normalized.png")
-#plt.show()
-
-
 
 x = np.linspace(0, 100, 51)
 
-#PLOT NORMAL-----------
+#PLOT NORMAL-----------(SEM ZSCCORE)
 
 #plt.figure(figsize=(10,5))
 
-# MediaPipe
+ #MediaPipe
 #plt.plot(x, mean, label="MediaPipe", color="blue")
 #plt.fill_between(x, mean-std, mean+std, alpha=0.2, color="blue")
 
-# Vicon (vermelho por cima)
+ #Vicon (vermelho por cima)
 #plt.plot(x, vicon_mean, label="Vicon", color="red")
 #plt.fill_between(x, vicon_mean-vicon_std, vicon_mean+vicon_std, alpha=0.2, color="red")
 
@@ -404,7 +434,7 @@ x = np.linspace(0, 100, 51)
 #plt.grid()
 #plt.show()
 
-# NORMALIZAÇÃO (Z-score) ---------------------------------------
+# NORMALIZAÇÃO (Z-score)--Tudo abaixo deste codigo é p ZSCORE ---------------------------------------
 mp_mean_z = zscore(mean)
 mp_std_z = std / np.std(mean)
 
