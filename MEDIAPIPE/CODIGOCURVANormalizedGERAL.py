@@ -224,14 +224,14 @@ vicon_peaks, _ = find_peaks(
     distance=int(120 * 0.7),
     prominence=0.01
 )
+#funcao normalizacao de 51 pontos
 
-def normalize(signal, n=101):
+def normalize(signal, n=101): #normalizar p 101 ou 51 pontos (como tfm manuel(51 pontos))
     signal = np.array(signal)
 
-    x = np.linspace(0, 1, len(signal))
-    f = interp1d(x, signal, kind="linear")
-
-    x_new = np.linspace(0, 1, n)
+    x = np.linspace(0, 1, len(signal))#cria um eixo "falso" com os x frames usados na zancada (ex.:41fps 41 pontos no eixo x)
+    f = interp1d(x, signal, kind="linear")#cria uma funcao linear na funcao dada
+    x_new = np.linspace(0, 1, n)#novo eixo com 51 pontos baseado na funcal anterior
     return f(x_new)
 
 vicon_cycles = []
@@ -246,7 +246,7 @@ for i in range(len(vicon_peaks) - 1):
     if len(stride) < 10:
         continue
 
-    norm = normalize(stride, n=51)
+    norm = normalize(stride, n=101)
 
     vicon_cycles.append(norm)
 
@@ -358,13 +358,7 @@ print(np.diff(peaks))
 
 cycles = []
 
-#funcao normalizacao de 51 pontos
 
-def normalize(signal, n=51):    #normalizar p 51 pontos (como tfm manuel)
-    x = np.linspace(0, 1, len(signal))#cria um eixo "falso" com os x frames usados na zancada (ex.:41fps 41 pontos no eixo x)
-    f = interp1d(x, signal, kind="linear")  #cria uma funcao linear na funcao dada
-    x_new = np.linspace(0, 1, n)    #novo eixo com 51 pontos baseado na funcal anterior
-    return f(x_new)
 
 for i in range(len(peaks) - 1):
 
@@ -414,7 +408,7 @@ plt.close()
 
 
 
-x = np.linspace(0, 100, 51)
+x = np.linspace(0, 100, 101)
 
 #PLOT NORMAL-----------(SEM ZSCCORE)
 
