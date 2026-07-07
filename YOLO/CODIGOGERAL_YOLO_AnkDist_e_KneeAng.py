@@ -277,7 +277,7 @@ vicon_ankle_dist_smooth = butter_lowpass_filter(
 vicon_peaks, _ = find_peaks(
     vicon_ankle_dist_smooth,
     distance=int(120 * 0.3),    #seleciona todos os picos
-    prominence=0.01
+    prominence=0.
     
 )
 vicon_peaks=vicon_peaks[::2]    #primeira perna(direita) // seleciona apenas quando a perna direita esta a frente (tal como verificado no video, o primeiro pico é da perna direita)
@@ -294,12 +294,25 @@ def normalize(signal, n=101): #normalizar p 101 ou 51 pontos (como tfm manuel(10
 
 vicon_cycles = []
 
-for i in range(len(vicon_peaks)-1):
+for i in range(len(vicon_peaks) - 1):
 
     start = vicon_peaks[i]
     end = vicon_peaks[i + 1]
 
-    stride = vicon_angles[start:end]
+    knee = vicon_angles[start:end]
+
+    if len(knee) < 10:
+        continue
+        
+    maxs, _ = find_peaks(knee, prominence=2)    #(para minimo colocar "-" (um menos) antes do "knee")
+
+    if len(maxs) < 2:
+        continue
+
+    new_start = start + maxs[0]
+    new_end = start + maxs[1]
+
+    stride = vicon_angles[new_start:new_end]
 
     if len(stride) < 10:
         continue
@@ -307,6 +320,8 @@ for i in range(len(vicon_peaks)-1):
     norm = normalize(stride, n=101)
 
     vicon_cycles.append(norm)
+
+    
 
 vicon_cycles = np.array(vicon_cycles)
 
@@ -421,17 +436,39 @@ cycles = []
 
 for i in range(len(peaks) - 1):
 
+    # Intervalo definido pela ankle distance
     start = peaks[i]
     end = peaks[i + 1]  #funcao basica de definicao de inicio e final de cada zancada(pico e pico+1)
 
-    stride = df["angle_smooth"].iloc[start:end].values
+    # Ângulo do joelho dentro dessa zancada
+    knee = df["angle_smooth"].iloc[start:end].values
 
-    if len(stride) < 10:   #filtrar zancadas mt pequenas (invalidas)
+    if len(knee) < 10:      #filtrar zancadas mt pequenas (invalidas)
+        continue
+
+    # Procurar maximo do joelho (para minimo colocar "-" (um menos) antes do "knee")
+    maxs, _ = find_peaks(knee, prominence=2)
+
+    # Precisamos de pelo menos dois mínimos
+    if len(maxs) < 2:
+        continue
+
+    # Primeiro mínimo = contacto inicial
+    new_start = start + maxs[0]
+
+    # Segundo mínimo = despegue
+    new_end = start + maxs[1]
+
+    # Extrair a zancada refinada
+    stride = df["angle_smooth"].iloc[new_start:new_end].values
+
+    if len(stride) < 10:
         continue
 
     norm = normalize(stride)
 
-    cycles.append(norm)   #guardar todas as zancadas (normalizadas)
+    cycles.append(norm) #guardar todas as zancadas (normalizadas)
+   
 
 cycles = np.array(cycles)
 

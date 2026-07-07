@@ -41,7 +41,7 @@ def angle3D(a, b, c):
 
 mp_pose = mp.solutions.pose
 
-video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba8_left.mp4"
+video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba3L.mp4"
 
 cap = cv2.VideoCapture(video_path)
 fps = cap.get(cv2.CAP_PROP_FPS)
@@ -85,23 +85,49 @@ with mp_pose.Pose() as pose:
             RF = lm[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX]
             RS = lm[mp_pose.PoseLandmark.RIGHT_SHOULDER]
 
+            LH = lm[mp_pose.PoseLandmark.LEFT_HIP]
+            LK = lm[mp_pose.PoseLandmark.LEFT_KNEE]
             LA = lm[mp_pose.PoseLandmark.LEFT_ANKLE]
+            LF = lm[mp_pose.PoseLandmark.LEFT_FOOT_INDEX]
+            LS = lm[mp_pose.PoseLandmark.LEFT_SHOULDER]
+
+            
             
 
-            hip = (RH.x, RH.y)
-            knee = (RK.x, RK.y)
-            ankle = (RA.x, RA.y)
-            foot = (RF.x, RF.y)
-            shoulder = (RS.x, RS.y)
+            right_hip = (RH.x, RH.y)
+            right_knee = (RK.x, RK.y)
+            right_ankle = (RA.x, RA.y)
+            right_foot = (RF.x, RF.y)
+            right_shoulder = (RS.x, RS.y)
 
-            # CALCuLAR angulo joelho ----------------
-            #ang = angle(hip, knee, ankle)
+            left_hip = (LH.x, LH.y)
+            left_knee = (LK.x, LK.y)
+            left_ankle = (LA.x, LA.y)
+            left_foot = (LF.x, LF.y)
+            left_shoulder = (LS.x, LS.y)
 
-            # CALCULAR angulo tornozelo ----------------
-            #ang = angle(knee, ankle, foot)
+             
 
-            # CALCULAR angulo anca ----------------
-            ang = angle(shoulder, hip, knee)
+
+            # CALCuLAR angulo right joelho ----------------
+            ang = angle(right_hip, right_knee, right_ankle)
+
+            # CALCuLAR angulo left joelho ----------------
+            #ang = angle(left_hip, left_knee, left_ankle)
+
+
+            # CALCULAR angulo right tornozelo ----------------       
+            #ang = angle(right_knee, right_ankle, right_foot)
+
+            # CALCULAR angulo left tornozelo ----------------        
+            #ang = angle(left_knee, left_ankle, left_foot)
+
+
+            # CALCULAR angulo right anca ----------------
+            #ang = angle(right_shoulder, right_hip, right_knee)
+
+            # CALCULAR angulo left anca ----------------
+            #ang = angle(left_shoulder, left_hip, left_knee)
 
 
             #DISTANCIA TOBILHOS
@@ -149,53 +175,84 @@ for i in range(len(df_vicon)):
     df_vicon["RAJC_X"].iloc[i],
     df_vicon["RAJC_Y"].iloc[i],
     df_vicon["RAJC_Z"].iloc[i]
-)
+    )
 
     left_ankle = (
     df_vicon["LAJC_X"].iloc[i],
     df_vicon["LAJC_Y"].iloc[i],
     df_vicon["LAJC_Z"].iloc[i]
-)
+    )
 
-    knee = (
+    right_knee = (
     df_vicon["RKJC_X"].iloc[i],
     df_vicon["RKJC_Y"].iloc[i],
     df_vicon["RKJC_Z"].iloc[i]
     )
 
-    ankle = (
-    df_vicon["RAJC_X"].iloc[i],
-    df_vicon["RAJC_Y"].iloc[i],
-    df_vicon["RAJC_Z"].iloc[i]
+    left_knee = (
+    df_vicon["LKJC_X"].iloc[i],
+    df_vicon["LKJC_Y"].iloc[i],
+    df_vicon["LKJC_Z"].iloc[i]
     )
 
-    toe = (
+
+    right_toe = (
     df_vicon["RTOE_X"].iloc[i],
     df_vicon["RTOE_Y"].iloc[i],
     df_vicon["RTOE_Z"].iloc[i]
     )
 
-    shoulder = (
+    left_toe = (
+    df_vicon["LTOE_X"].iloc[i],
+    df_vicon["LTOE_Y"].iloc[i],
+    df_vicon["LTOE_Z"].iloc[i]
+    )
+
+    right_shoulder = (
     df_vicon["RSHO_X"].iloc[i],
     df_vicon["RSHO_Y"].iloc[i],
     df_vicon["RSHO_Z"].iloc[i]
     )
 
-    hip = (
+    left_shoulder = (
+    df_vicon["LSHO_X"].iloc[i],
+    df_vicon["LSHO_Y"].iloc[i],
+    df_vicon["LSHO_Z"].iloc[i]
+    )
+
+    right_hip = (
     df_vicon["RHJC_X"].iloc[i],
     df_vicon["RHJC_Y"].iloc[i],
     df_vicon["RHJC_Z"].iloc[i]
     )
 
+    left_hip = (
+    df_vicon["LHJC_X"].iloc[i],
+    df_vicon["LHJC_Y"].iloc[i],
+    df_vicon["LHJC_Z"].iloc[i]
+    )
 
-    #CALCULAR ANG HIP VICON
-    ang = angle3D(shoulder, hip, knee)
 
-    #CALCULAR ANG ANKLE VICON
-    #ang = angle3D(knee, ankle, toe)
 
-    #CALCULAR ANG KNEE VICON
-    #ang = angle3D(hip, knee, ankle)
+    # CALCuLAR angulo right joelho ----------------
+    ang = angle3D(right_hip, right_knee, right_ankle)
+
+    # CALCuLAR angulo left joelho ----------------
+    #ang = angle3D(left_hip, left_knee, left_ankle)
+
+
+    # CALCULAR angulo right tornozelo ----------------       
+    #ang = angle3D(right_knee, right_ankle, right_foot)
+
+    # CALCULAR angulo left tornozelo ----------------        
+    #ang = angle3D(left_knee, left_ankle, left_foot)
+
+
+    # CALCULAR angulo right anca ----------------
+    #ang = angle3D(right_shoulder, right_hip, right_knee)
+
+    # CALCULAR angulo left anca ----------------
+    #ang = angle3D(left_shoulder, left_hip, left_knee)
     
     vicon_angles.append(ang)
 
@@ -219,9 +276,13 @@ vicon_ankle_dist_smooth = butter_lowpass_filter(
 
 vicon_peaks, _ = find_peaks(
     vicon_ankle_dist_smooth,
-    distance=int(120 * 0.7),
+    distance=int(120 * 0.3),        #seleciona todos os picos
     prominence=0.01
 )
+
+vicon_peaks=vicon_peaks[::2]    #primeira perna(direita) // seleciona apenas quando a perna direita esta a frente (tal como verificado no video, o primeiro pico é da perna direita)
+#vicon_peaks=vicon_peaks[1::2]    #segunda perna(esquerda)
+
 #funcao normalizacao de 101/51 pontos
 
 def normalize(signal, n=101): #normalizar p 101 ou 51 pontos (como tfm manuel(51 pontos))
@@ -265,10 +326,12 @@ def zscore(x):
 peaks, _ = find_peaks(
     df["ankle_dist_smooth"],
     distance=int(fps * 0.3),   # Le todos os picos(todas as zancadas)faz q seja de 0.3 em 0.3 secs OU a cada 18 frames( 60*0.3=18 frames)
-    prominence=0.01            # ignora ruído pequeno
+    prominence=0.005           # ignora ruído pequeno
 )
 
-peaks = peaks[::2]  #divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
+
+#peaks = peaks[::2]  #primeira perna(direita) // divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
+peaks = peaks[1::2]  #segunda perna(esquerda) // adicionar ali o 1 para ler os picos mais altos em vez de os mais baixos
 
 # Grafico ankle distance VICON-----------------
 
@@ -305,27 +368,27 @@ plt.show()
 #fim grafico vicon ank dist-----
 
 #grafico linhas-------------------
-plt.figure(figsize=(12,4))
+#plt.figure(figsize=(12,4))
 
-plt.plot(df["time_sec"], df["ankle_dist_smooth"])
+#plt.plot(df["time_sec"], df["ankle_dist_smooth"])
 
-plt.scatter(
-    df["time_sec"][peaks],
-    df["ankle_dist_smooth"][peaks],
-    color="red"
-)
+#plt.scatter(
+#    df["time_sec"][peaks],
+#    df["ankle_dist_smooth"][peaks],
+#    color="red"
+#)
 
-for p in peaks:
-    plt.axvline(df["time_sec"].iloc[p], color="red", alpha=0.3)
+#for p in peaks:
+#    plt.axvline(df["time_sec"].iloc[p], color="red", alpha=0.3)
 
-plt.show()
+#plt.show()
 #fim grafico linhas-----------
 
 all_peaks, _ = find_peaks(
     df["ankle_dist_smooth"]
 )
 
-print(len(all_peaks))
+#print(len(all_peaks))
 
 plt.figure(figsize=(12,4))
 

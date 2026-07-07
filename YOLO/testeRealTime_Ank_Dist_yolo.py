@@ -131,7 +131,7 @@ while True: #Percorre todos os frames
             #     (RA[0] - LA[0])**2 + (RA[1] - LA[1])**2 #formula distancia euclidiana: d = RAIZ[(x2-x1)^2 + (y2-y1)^2]
             #)
 
-            ankle_dist = abs(RA[0] - LA[0])
+            ankle_dist = (RA[0] - LA[0])
 
             # calc tempo ----------------
             time_sec = frame_idx / fps

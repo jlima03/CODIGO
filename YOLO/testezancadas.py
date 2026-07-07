@@ -57,7 +57,7 @@ data = []
 #Filtro Butterworth (igual tfm manuel)
 
 def butter_lowpass_filter(data, cutoff=6, fs=60, order=4):
-    nyq = 0.5 * fs  #freq de nyquist (0.5*30=15hz)////divides por dois pelo teorema de nyquist
+    nyq = 0.5 * fs  #freq de nyquist (0.5*60=15hz)////divides por dois pelo teorema de nyquist
     normal_cutoff = cutoff / nyq    #=6hz/15hz=0.4
  
     b, a = butter(order, normal_cutoff, btype='low', analog=False)
@@ -107,7 +107,7 @@ while True: #Percorre todos os frames
             
 
             # CALCuLAR angulo right joelho ----------------
-            ang = angle(right_hip, right_knee, right_ankle)
+            #ang = angle(right_hip, right_knee, right_ankle)
 
             # CALCuLAR angulo left joelho ----------------
             #ang = angle(left_hip, left_knee, left_ankle)
@@ -124,7 +124,7 @@ while True: #Percorre todos os frames
             #ang = angle(right_shoulder, right_hip, right_knee)
 
             # CALCULAR angulo left anca ----------------
-            #ang = angle(left_shoulder, left_hip, left_knee)
+            ang = angle(left_shoulder, left_hip, left_knee)
 
             
 
@@ -233,7 +233,7 @@ for i in range(len(df_vicon)):
     )
 
     #CALCULAR ANG RIGHT KNEE VICON
-    ang = angle3D(right_hip, right_knee, right_ankle)
+    #ang = angle3D(right_hip, right_knee, right_ankle)
 
     #CALCULAR ANG LEFT KNEE VICON
     #ang = angle3D(left_hip, left_knee, left_ankle)
@@ -250,7 +250,7 @@ for i in range(len(df_vicon)):
     #ang = angle3D(right_shoulder, right_hip, right_knee)
 
     #CALCULAR ANG LEFT HIP VICON
-    #ang = angle3D(left_shoulder, left_hip, left_knee)
+    ang = angle3D(left_shoulder, left_hip, left_knee)
 
     
     
@@ -277,11 +277,32 @@ vicon_ankle_dist_smooth = butter_lowpass_filter(
 vicon_peaks, _ = find_peaks(
     vicon_ankle_dist_smooth,
     distance=int(120 * 0.3),    #seleciona todos os picos
-    prominence=0.01
+    prominence=0.
     
 )
-vicon_peaks=vicon_peaks[::2]    #primeira perna(direita) // seleciona apenas quando a perna direita esta a frente (tal como verificado no video, o primeiro pico é da perna direita)
-#vicon_peaks=vicon_peaks[1::2]    #segunda perna(esquerda)
+#vicon_peaks=vicon_peaks[::2]    #primeira perna(direita) // seleciona apenas quando a perna direita esta a frente (tal como verificado no video, o primeiro pico é da perna direita)
+vicon_peaks=vicon_peaks[1::2]    #segunda perna(esquerda)
+
+plt.figure(figsize=(12,4))
+plt.plot(vicon_angles, label="Vicon angle")
+
+for i in range(min(3, len(vicon_peaks)-1)):
+    plt.axvspan(
+        vicon_peaks[i],
+        vicon_peaks[i+1],
+        alpha=0.25,
+        label=f"Stride {i}" if i == 0 else None
+    )
+
+plt.scatter(
+    vicon_peaks,
+    vicon_angles[vicon_peaks],
+    color="red"
+)
+
+plt.title("Vicon - primeiras zancadas")
+plt.legend()
+plt.show()
 
 #funcao normalizacao de 101/51 pontos
 def normalize(signal, n=101): #normalizar p 101 ou 51 pontos (como tfm manuel(101 pontos))
@@ -294,7 +315,7 @@ def normalize(signal, n=101): #normalizar p 101 ou 51 pontos (como tfm manuel(10
 
 vicon_cycles = []
 
-for i in range(len(vicon_peaks)-1):
+for i in range(len(vicon_peaks) - 1):
 
     start = vicon_peaks[i]
     end = vicon_peaks[i + 1]
@@ -328,8 +349,29 @@ peaks, _ = find_peaks(
     prominence=0.01            # ignora ruído pequeno
 )
 
-peaks = peaks[::2]  #primeira perna(direita) // divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
-#peaks = peaks[1::2]  #segunda perna(esquerda) // adicionar ali o 1 para ler os picos mais altos em vez de os mais baixos
+#peaks = peaks[::2]  #primeira perna(direita) // divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
+peaks = peaks[1::2]  #segunda perna(esquerda) // adicionar ali o 1 para ler os picos mais altos em vez de os mais baixos
+# Mostrar as primeiras zancadas do YOLO
+plt.figure(figsize=(12,4))
+plt.plot(df["angle_smooth"], label="YOLO angle")
+
+for i in range(min(3, len(peaks)-1)):
+    plt.axvspan(
+        peaks[i],
+        peaks[i+1],
+        alpha=0.25,
+        label=f"Stride {i}" if i == 0 else None
+    )
+
+plt.scatter(
+    peaks,
+    df["angle_smooth"].iloc[peaks],
+    color="red"
+)
+
+plt.title("YOLO - primeiras zancadas")
+plt.legend()
+plt.show()
 
 # Grafico ankle distance VICON-----------------
 
