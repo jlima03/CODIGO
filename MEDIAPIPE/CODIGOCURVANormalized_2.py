@@ -41,11 +41,10 @@ def angle3D(a, b, c):
 
 mp_pose = mp.solutions.pose
 
-video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba8_left.mp4"
+video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba3L.mp4"
 
 cap = cv2.VideoCapture(video_path)
 fps = cap.get(cv2.CAP_PROP_FPS)
-width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
 
 data = []
 
@@ -125,7 +124,7 @@ with mp_pose.Pose() as pose:
 
 
             # CALCULAR angulo right anca ----------------
-            #ng = angle(right_shoulder, right_hip, right_knee)
+            #ang = angle(right_shoulder, right_hip, right_knee)
 
             # CALCULAR angulo left anca ----------------
             #ang = angle(left_shoulder, left_hip, left_knee)
@@ -156,20 +155,15 @@ df = pd.DataFrame(data, columns=["time_sec", "angle", "ankle_dist"])
 #aplicar filtro
 df["angle_smooth"] = butter_lowpass_filter(df["angle"])
 df["ankle_dist_smooth"] = butter_lowpass_filter(df["ankle_dist"])
-#df["right_ankle_x_smooth"] = butter_lowpass_filter(df["right_ankle_x"])
 
 
 
 #FAZER GRAFICO VICON------
 
 df_vicon = pd.read_excel(
-    r"C:\Users\joaov\Desktop\TFM\DadosAnalisados\VICON\CAPTURA08.xlsx",
+    r"C:\Users\joaov\Desktop\TFM\DadosAnalisados\VICON\bbbcatura8cop.xlsx",
     header=3
 )
-print(df_vicon[["RAJC_X","LAJC_X"]].head())
-print(df_vicon[["RAJC_X","LAJC_X"]].describe())
-print(df_vicon.columns.tolist())
-
 
 
 vicon_angles = []
@@ -183,14 +177,11 @@ for i in range(len(df_vicon)):
     df_vicon["RAJC_Z"].iloc[i]
     )
 
-    
-
     left_ankle = (
     df_vicon["LAJC_X"].iloc[i],
     df_vicon["LAJC_Y"].iloc[i],
     df_vicon["LAJC_Z"].iloc[i]
     )
-    
 
     right_knee = (
     df_vicon["RKJC_X"].iloc[i],
@@ -251,10 +242,10 @@ for i in range(len(df_vicon)):
 
 
     # CALCULAR angulo right tornozelo ----------------       
-    #ang = angle3D(right_knee, right_ankle, right_toe)
+    #ang = angle3D(right_knee, right_ankle, right_foot)
 
     # CALCULAR angulo left tornozelo ----------------        
-    #ang = angle3D(left_knee, left_ankle, left_toe)
+    #ang = angle3D(left_knee, left_ankle, left_foot)
 
 
     # CALCULAR angulo right anca ----------------
@@ -272,41 +263,9 @@ for i in range(len(df_vicon)):
 
     vicon_ankle_dist.append(ankle_dist)
 
-
-
-#para mostrar a coordenada x da annkle direita
-#vicon_right_ankle_x = np.array(vicon_right_ankle_x)
-
-#vicon_right_ankle_x_smooth = butter_lowpass_filter(
-#    vicon_right_ankle_x,
-#    cutoff=6,
-#    fs=120,
-#    order=4
-#)
-
-#vicon_left_ankle_x = np.array(vicon_left_ankle_x)
-
-#vicon_left_ankle_x_smooth = butter_lowpass_filter(
-#    vicon_left_ankle_x,
-#    cutoff=6,
-#    fs=120,
-#    order=4
-#)
-
 vicon_angles = np.array(vicon_angles)
 
 vicon_ankle_dist = np.array(vicon_ankle_dist)
-
-plt.figure(figsize=(12,4))
-plt.plot(vicon_ankle_dist)
-plt.grid()
-plt.show()
-
-print("len:", len(vicon_ankle_dist))
-print("NaNs:", np.isnan(vicon_ankle_dist).sum())
-print("Inf:", np.isinf(vicon_ankle_dist).sum())
-print("Min:", np.min(vicon_ankle_dist))
-print("Max:", np.max(vicon_ankle_dist))
 
 vicon_ankle_dist_smooth = butter_lowpass_filter(
     vicon_ankle_dist,
@@ -315,28 +274,17 @@ vicon_ankle_dist_smooth = butter_lowpass_filter(
     order=4
 )
 
-print("NaNs smooth:", np.isnan(vicon_ankle_dist_smooth).sum())
-print("Inf smooth:", np.isinf(vicon_ankle_dist_smooth).sum())
-
-plt.figure(figsize=(12,4))
-plt.plot(vicon_ankle_dist_smooth)
-plt.grid()
-plt.show()
-
-
 vicon_peaks, _ = find_peaks(
     vicon_ankle_dist_smooth,
     distance=int(120 * 0.3),        #seleciona todos os picos
     prominence=0.01
 )
 
-
 vicon_peaks=vicon_peaks[::2]    #primeira perna(direita) // seleciona apenas quando a perna direita esta a frente (tal como verificado no video, o primeiro pico é da perna direita)
 #vicon_peaks=vicon_peaks[1::2]    #segunda perna(esquerda)
 
-
-
 #funcao normalizacao de 101/51 pontos
+
 def normalize(signal, n=101): #normalizar p 101 ou 51 pontos (como tfm manuel(51 pontos))
     signal = np.array(signal)
 
@@ -347,13 +295,14 @@ def normalize(signal, n=101): #normalizar p 101 ou 51 pontos (como tfm manuel(51
 
 vicon_cycles = []
 
-for i in range(len(vicon_peaks) - 1):       #tens a lista vicon_peaks ex.: vicon_peaks = [120, 245, 368, 492, 618,...]  //como a lista tem x elementos, fazes -1 para que na ultima zancada o "end" exista, por ex.: 10 picos produzem 9 zancadas
+for i in range(len(vicon_peaks) - 1):
+
     start = vicon_peaks[i]
     end = vicon_peaks[i + 1]
 
     stride = vicon_angles[start:end]
 
-    if len(stride) < 10:        #ignora zancadas de menos de 10 frames
+    if len(stride) < 10:
         continue
 
     norm = normalize(stride, n=101)
@@ -362,10 +311,7 @@ for i in range(len(vicon_peaks) - 1):       #tens a lista vicon_peaks ex.: vicon
 
 vicon_cycles = np.array(vicon_cycles)
 
-print("Número de picos:", len(vicon_peaks))
-print("Picos:", vicon_peaks)
 
-print("Número de ciclos:", len(vicon_cycles))
 vicon_mean = np.mean(vicon_cycles, axis=0)
 vicon_std = np.std(vicon_cycles, axis=0)
 
@@ -384,35 +330,18 @@ peaks, _ = find_peaks(
 )
 
 
-peaks = peaks[::2]  #primeira perna(direita) // divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
-#peaks = peaks[1::2]  #segunda perna(esquerda) // adicionar ali o 1 para ler os picos mais altos em vez de os mais baixos
-
-
-
-#para coordenada x ankle direita
-#vicon_ankle_norm = zscore(vicon_ankle_dist_smooth)
-#vicon_right_x_norm = zscore(vicon_right_ankle_x_smooth)
+#peaks = peaks[::2]  #primeira perna(direita) // divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
+peaks = peaks[1::2]  #segunda perna(esquerda) // adicionar ali o 1 para ler os picos mais altos em vez de os mais baixos
 
 # Grafico ankle distance VICON-----------------
+
+
 plt.figure(figsize=(12,5))
 
 plt.plot(
     vicon_ankle_dist_smooth,
-    label="Vicon ankle distance",
-    color="blue"
+    label="Vicon ankle distance"
 )
-
-#plt.plot(
-#    vicon_right_ankle_x_smooth,
-#    label="Right ankle X",
-#    color="orange"
-#)
-
-#plt.plot(
-#    vicon_left_ankle_x_smooth,
-#    label="Left ankle X",
-#    color="purple"
-#)
 
 plt.scatter(
     vicon_peaks,
@@ -459,24 +388,11 @@ all_peaks, _ = find_peaks(
     df["ankle_dist_smooth"]
 )
 
-
-#zscore da comparacao de coordenada x right ankle e ankle dist
-#ankle_norm = zscore(df["ankle_dist_smooth"])
-#right_x_norm = zscore(df["right_ankle_x_smooth"])
-
-#plt.figure(figsize=(12,4))
-
-#plt.plot(df["time_sec"], ankle_norm, label="Ankle distance")
-#plt.plot(df["time_sec"], right_x_norm, label="Right ankle X")
-#plt.xlabel("Ankle distance and right ankle x Coordinate comparison")
-#plt.legend()
-#plt.show()
-
+#print(len(all_peaks))
 
 plt.figure(figsize=(12,4))
 
-#dist entre tornozelos
-plt.plot(df["time_sec"], df["ankle_dist_smooth"],label="Ankle distance",color="blue")
+plt.plot(df["time_sec"], df["ankle_dist_smooth"])
 
 plt.scatter(
     df["time_sec"][all_peaks],
@@ -498,7 +414,8 @@ plt.legend()
 plt.show()
 
 
-
+print(peaks)
+print(np.diff(peaks))
 
 cycles = []
 

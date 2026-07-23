@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-df = pd.read_excel(r"C:\Users\joaov\Desktop\TFM\Prueba8LeftZED2.xlsx")
+df = pd.read_excel(r"C:\Users\joaov\Desktop\TFM\DadosAnalisados\VICON\CAPTURA08.xlsx", header=[2, 3])
 
 bones = [
     ("head","neck"),
