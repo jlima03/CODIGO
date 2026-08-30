@@ -43,11 +43,11 @@ data = []
 
 
 
-#Filtro Butterworth (igual tfm manuel)
+#Filtro Butterworth 
 
 def butter_lowpass_filter(data, cutoff=6, fs=60, order=4):
-    nyq = 0.5 * fs  #freq de nyquist (0.5*30=15hz)////divides por dois pelo teorema de nyquist
-    normal_cutoff = cutoff / nyq    #=6hz/15hz=0.4
+    nyq = 0.5 * fs  #freq de nyquist (0.5*60=30hz)////divides por dois pelo teorema de nyquist
+    normal_cutoff = cutoff / nyq    #=6hz/15hz=0.2
 
     b, a = butter(order, normal_cutoff, btype='low', analog=False)
     return filtfilt(b, a, data)
@@ -95,11 +95,13 @@ with mp_pose.Pose() as pose:
             # CALCULAR angulo anca ----------------
             ang = angle(shoulder, hip, knee)
 
+            ang=180-ang
 
             #DISTANCIA TOBILHOS
-            ankle_dist = math.sqrt(
-                (RA.x - LA.x)**2 + (RA.y - LA.y)**2 #formula distancia euclidiana: d = RAIZ[(x2-x1)^2 + (y2-y1)^2]
-            )
+            #ankle_dist = math.sqrt(
+            #    (RA.x - LA.x)**2 + (RA.y - LA.y)**2 #formula distancia euclidiana: d = RAIZ[(x2-x1)^2 + (y2-y1)^2]
+            #)
+            ankle_dist = abs(RA.x - LA.x)
             # calc tempo ----------------
             time_sec = frame_idx / fps
 
@@ -138,12 +140,13 @@ peaks, _ = find_peaks(
 cycles = []
 cycles_raw = []
 
-#funcao normalizacao de 51 pontos
 
-def normalize(signal, n=51):    #normalizar p 51 pontos (como tfm manuel)
+#funcao normalizacao de 101 pontos
+
+def normalize(signal, n=101):    #normalizar p 101 pontos
     x = np.linspace(0, 1, len(signal))#cria um eixo "falso" com os x frames usados na zancada (ex.:41fps 41 pontos no eixo x)
     f = interp1d(x, signal, kind="linear")  #cria uma funcao linear na funcao dada
-    x_new = np.linspace(0, 1, n)    #novo eixo com 51 pontos baseado na funcal anterior
+    x_new = np.linspace(0, 1, n)    #novo eixo com 101 pontos baseado na funcal anterior
     return f(x_new)
 
 for i in range(len(peaks) - 1):
@@ -186,10 +189,10 @@ df.loc[peaks, "is_peak"] = 1
 
 
 
-#PLOT-----------------------
+#PLOT FILTRO E SEM FILTRO-----------------------
 
 
-x = np.linspace(0, 100, 51)
+x = np.linspace(0, 100, 101)
 
 plt.figure(figsize=(10,5))
 
@@ -203,6 +206,80 @@ plt.fill_between(x, mean_raw-std_raw, mean_raw+std_raw, alpha=0.2, color="green"
 
 plt.xlabel("% gait cycle")
 plt.ylabel("Angle (º)")
+plt.legend()
+plt.grid()
+plt.show()
+
+#PLOT SEM FILTRO
+plt.figure(figsize=(10,5))
+
+plt.plot(x, mean_raw, label="Raw", color="green")
+plt.fill_between(x, mean_raw-std_raw, mean_raw+std_raw, alpha=0.2, color="green")
+
+plt.xlabel("% gait cycle")
+plt.ylabel("Angle (º)")
+plt.title("Raw Signal")
+plt.legend()
+plt.grid()
+plt.show()
+
+#PLOT C FILTRO
+plt.figure(figsize=(10,5))
+
+plt.plot(x, mean, label="Filtered", color="blue")
+plt.fill_between(x, mean-std, mean+std, alpha=0.2, color="blue")
+
+plt.xlabel("% gait cycle")
+plt.ylabel("Angle (º)")
+plt.title("Filtered Signal")
+plt.legend()
+plt.grid()
+plt.show()
+
+
+# ANKLE DIST FILTRO VS S FILTRO
+
+
+plt.figure(figsize=(10,5))
+
+plt.plot(df["time_sec"], df["ankle_dist"], label="Raw", color="green")
+plt.plot(df["time_sec"], df["ankle_dist_smooth"], label="Filtered", color="blue")
+
+plt.xlabel("Time (s)")
+plt.ylabel("Horizontal ankle distance")
+plt.title("Ankle Distance - Raw vs Filtered")
+plt.legend()
+plt.grid()
+plt.show()
+
+
+
+# ANKLE DIST S FILTRO
+
+
+plt.figure(figsize=(10,5))
+
+plt.plot(df["time_sec"], df["ankle_dist"], label="Raw", color="green")
+
+plt.xlabel("Time (s)")
+plt.ylabel("Horizontal ankle distance")
+plt.title("Ankle Distance - Raw")
+plt.legend()
+plt.grid()
+plt.show()
+
+
+
+# ANKLE DIST C FILTRO
+
+
+plt.figure(figsize=(10,5))
+
+plt.plot(df["time_sec"], df["ankle_dist_smooth"], label="Filtered", color="blue")
+
+plt.xlabel("Time (s)")
+plt.ylabel("Horizontal ankle distance")
+plt.title("Ankle Distance - Filtered")
 plt.legend()
 plt.grid()
 plt.show()

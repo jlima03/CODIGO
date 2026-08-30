@@ -28,8 +28,8 @@ y_data = []
 line, = ax.plot([], [])
 
 ax.set_xlabel("Tempo (s)")
-ax.set_ylabel("Ângulo do tornozelo (°)")
-ax.set_title("Ankle Angle - MediaPipe")
+ax.set_ylabel("Ankle distance")
+ax.set_title("Inter Ankle Distance - MediaPipe")
 
 # ---------------- função ângulo ----------------
 
@@ -73,23 +73,21 @@ while cap.isOpened():
 
         lm = results.pose_landmarks.landmark
 
-        # RIGHT LEG / FOOT
-        knee = lm[mp_pose.PoseLandmark.RIGHT_KNEE]
-        ankle = lm[mp_pose.PoseLandmark.RIGHT_ANKLE]
-        foot = lm[mp_pose.PoseLandmark.RIGHT_FOOT_INDEX]
+                # Tornozelos
+        RA = lm[mp_pose.PoseLandmark.RIGHT_ANKLE]
+        LA = lm[mp_pose.PoseLandmark.LEFT_ANKLE]
 
-        knee = (knee.x*w, knee.y*h)
-        ankle = (ankle.x*w, ankle.y*h)
-        foot = (foot.x*w, foot.y*h)
+        right_ankle = (RA.x * w, RA.y * h)
+        left_ankle = (LA.x * w, LA.y * h)
 
-        # ângulo do tornozelo
-        ang = angle(knee, ankle, foot)
+        # Distância entre tornozelos (euclidiana)
+        ankle_dist = abs(right_ankle[0] - left_ankle[0])
 
         t = frame_idx / fps
 
-        # atualizar gráfico
+        # Atualizar gráfico
         x_data.append(t)
-        y_data.append(ang)
+        y_data.append(ankle_dist)
 
         line.set_xdata(x_data)
         line.set_ydata(y_data)
@@ -102,8 +100,8 @@ while cap.isOpened():
         # mostrar ângulo no vídeo
         cv2.putText(
             frame,
-            f"{ang:.1f} deg",
-            (int(ankle[0]), int(ankle[1])),
+            f"{ankle_dist:.1f}",
+            (30, 40),
             cv2.FONT_HERSHEY_SIMPLEX,
             1,
             (0,255,0),
@@ -111,9 +109,16 @@ while cap.isOpened():
         )
 
         # pontos usados no cálculo
-        cv2.circle(frame, (int(knee[0]), int(knee[1])), 8, (255,0,0), -1)
-        cv2.circle(frame, (int(ankle[0]), int(ankle[1])), 8, (0,255,0), -1)
-        cv2.circle(frame, (int(foot[0]), int(foot[1])), 8, (0,0,255), -1)
+        cv2.circle(frame, (int(right_ankle[0]), int(right_ankle[1])), 8, (0,255,0), -1)
+        cv2.circle(frame, (int(left_ankle[0]), int(left_ankle[1])), 8, (0,0,255), -1)
+
+        cv2.line(
+            frame,
+            (int(right_ankle[0]), int(right_ankle[1])),
+            (int(left_ankle[0]), int(left_ankle[1])),
+            (255,0,0),
+            2
+        )
 
     cv2.imshow("MediaPipe Ankle Angle", frame)
 

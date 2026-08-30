@@ -44,7 +44,7 @@ def angle3D(a, b, c):
 
 
 
-video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba8_left.mp4"
+video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba5L.mp4"
 
 cap = cv2.VideoCapture(video_path)
 fps = cap.get(cv2.CAP_PROP_FPS)
@@ -57,8 +57,8 @@ data = []
 #Filtro Butterworth (igual tfm manuel)
 
 def butter_lowpass_filter(data, cutoff=6, fs=60, order=4):
-    nyq = 0.5 * fs  #freq de nyquist (0.5*30=15hz)////divides por dois pelo teorema de nyquist
-    normal_cutoff = cutoff / nyq    #=6hz/15hz=0.4
+    nyq = 0.5 * fs  #freq de nyquist (0.5*60=30hz)////divides por dois pelo teorema de nyquist
+    normal_cutoff = cutoff / nyq    #=6hz/30hz=0.2
  
     b, a = butter(order, normal_cutoff, btype='low', analog=False)
     return filtfilt(b, a, data)
@@ -107,10 +107,10 @@ while True: #Percorre todos os frames
             
 
             # CALCuLAR angulo right joelho ----------------
-            ang = angle(right_hip, right_knee, right_ankle)
+            #ang = angle(right_hip, right_knee, right_ankle)
 
             # CALCuLAR angulo left joelho ----------------
-            #ang = angle(left_hip, left_knee, left_ankle)
+            ang = angle(left_hip, left_knee, left_ankle)
 
 
             # CALCULAR angulo right tornozelo ----------------       # NAO HA ANKLE EM YOLO
@@ -126,7 +126,7 @@ while True: #Percorre todos os frames
             # CALCULAR angulo left anca ----------------
             #ang = angle(left_shoulder, left_hip, left_knee)
 
-            
+            ang=180-ang
 
 
             #DISTANCIA TOBILHOS
@@ -161,7 +161,7 @@ df["ankle_dist_smooth"] = butter_lowpass_filter(df["ankle_dist"])
 #FAZER GRAFICO VICON------
 
 df_vicon = pd.read_excel(
-    r"C:\Users\joaov\Desktop\TFM\DadosAnalisados\VICON\CAPTURA08.xlsx",
+    r"C:\Users\joaov\Desktop\TFM\DadosAnalisados\VICON\CAPTURA05.xlsx",
     header=3
 )
 
@@ -233,10 +233,10 @@ for i in range(len(df_vicon)):
     )
 
     #CALCULAR ANG RIGHT KNEE VICON
-    ang = angle3D(right_hip, right_knee, right_ankle)
+    #ang = angle3D(right_hip, right_knee, right_ankle)
 
     #CALCULAR ANG LEFT KNEE VICON
-    #ang = angle3D(left_hip, left_knee, left_ankle)
+    ang = angle3D(left_hip, left_knee, left_ankle)
 
 
     #CALCULAR ANG RIGHT ANKLE VICON
@@ -251,7 +251,7 @@ for i in range(len(df_vicon)):
 
     #CALCULAR ANG LEFT HIP VICON
     #ang = angle3D(left_shoulder, left_hip, left_knee)
-
+    ang=180-ang
     
     
     vicon_angles.append(ang)
@@ -497,7 +497,7 @@ vicon_std_z = vicon_std / np.std(vicon_mean)
 plt.figure(figsize=(10,5))
 
 # MediaPipe
-plt.plot(x, mp_mean_z, label="MediaPipe (z-score)", color="blue")
+plt.plot(x, mp_mean_z, label="YOLO (z-score)", color="blue")
 plt.fill_between(x,
                  mp_mean_z - mp_std_z,
                  mp_mean_z + mp_std_z,

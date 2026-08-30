@@ -52,11 +52,11 @@ data = []
 
 
 
-#Filtro Butterworth (igual tfm manuel)
+#Filtro Butterworth
 
 def butter_lowpass_filter(data, cutoff=6, fs=60, order=4):
-    nyq = 0.5 * fs  #freq de nyquist (0.5*30=15hz)////divides por dois pelo teorema de nyquist
-    normal_cutoff = cutoff / nyq    #=6hz/15hz=0.4
+    nyq = 0.5 * fs  #freq de nyquist (0.5*60=30hz)////divides por dois pelo teorema de nyquist
+    normal_cutoff = cutoff / nyq    #=6hz/30hz=0.2
  
     b, a = butter(order, normal_cutoff, btype='low', analog=False)
     return filtfilt(b, a, data)
@@ -130,6 +130,8 @@ with mp_pose.Pose() as pose:
             # CALCULAR angulo left anca ----------------
             #ang = angle(left_shoulder, left_hip, left_knee)
 
+            ang=180-ang
+
 
             #DISTANCIA TOBILHOS
            # ankle_dist = math.sqrt(
@@ -156,7 +158,7 @@ df = pd.DataFrame(data, columns=["time_sec", "angle", "ankle_dist"])
 #aplicar filtro
 df["angle_smooth"] = butter_lowpass_filter(df["angle"])
 df["ankle_dist_smooth"] = butter_lowpass_filter(df["ankle_dist"])
-#df["right_ankle_x_smooth"] = butter_lowpass_filter(df["right_ankle_x"])
+
 
 
 
@@ -166,9 +168,7 @@ df_vicon = pd.read_excel(
     r"C:\Users\joaov\Desktop\TFM\DadosAnalisados\VICON\CAPTURA08.xlsx",
     header=3
 )
-print(df_vicon[["RAJC_X","LAJC_X"]].head())
-print(df_vicon[["RAJC_X","LAJC_X"]].describe())
-print(df_vicon.columns.tolist())
+
 
 
 
@@ -262,6 +262,8 @@ for i in range(len(df_vicon)):
 
     # CALCULAR angulo left anca ----------------
     #ang = angle3D(left_shoulder, left_hip, left_knee)
+
+    ang=180-ang
     
     vicon_angles.append(ang)
 
@@ -274,24 +276,6 @@ for i in range(len(df_vicon)):
 
 
 
-#para mostrar a coordenada x da annkle direita
-#vicon_right_ankle_x = np.array(vicon_right_ankle_x)
-
-#vicon_right_ankle_x_smooth = butter_lowpass_filter(
-#    vicon_right_ankle_x,
-#    cutoff=6,
-#    fs=120,
-#    order=4
-#)
-
-#vicon_left_ankle_x = np.array(vicon_left_ankle_x)
-
-#vicon_left_ankle_x_smooth = butter_lowpass_filter(
-#    vicon_left_ankle_x,
-#    cutoff=6,
-#    fs=120,
-#    order=4
-#)
 
 vicon_angles = np.array(vicon_angles)
 
@@ -302,30 +286,27 @@ plt.plot(vicon_ankle_dist)
 plt.grid()
 plt.show()
 
-print("len:", len(vicon_ankle_dist))
-print("NaNs:", np.isnan(vicon_ankle_dist).sum())
-print("Inf:", np.isinf(vicon_ankle_dist).sum())
-print("Min:", np.min(vicon_ankle_dist))
-print("Max:", np.max(vicon_ankle_dist))
 
-vicon_ankle_dist_smooth = butter_lowpass_filter(
-    vicon_ankle_dist,
-    cutoff=6,
-    fs=120,
-    order=4
-)
 
-print("NaNs smooth:", np.isnan(vicon_ankle_dist_smooth).sum())
-print("Inf smooth:", np.isinf(vicon_ankle_dist_smooth).sum())
+#vicon_ankle_dist_smooth = butter_lowpass_filter(
+#    vicon_ankle_dist,
+#    cutoff=6,
+#    fs=120,
+#    order=4
+#)
+
+
 
 plt.figure(figsize=(12,4))
-plt.plot(vicon_ankle_dist_smooth)
+#plt.plot(vicon_ankle_dist_smooth)
+plt.plot(vicon_ankle_dist)                      
 plt.grid()
 plt.show()
 
 
 vicon_peaks, _ = find_peaks(
-    vicon_ankle_dist_smooth,
+    #vicon_ankle_dist_smooth,                                
+    vicon_ankle_dist,
     distance=int(120 * 0.3),        #seleciona todos os picos
     prominence=0.01
 )
@@ -342,7 +323,7 @@ def normalize(signal, n=101): #normalizar p 101 ou 51 pontos (como tfm manuel(51
 
     x = np.linspace(0, 1, len(signal))#cria um eixo "falso" com os x frames usados na zancada (ex.:41fps 41 pontos no eixo x)
     f = interp1d(x, signal, kind="linear")#cria uma funcao linear na funcao dada
-    x_new = np.linspace(0, 1, n)#novo eixo com 51 pontos baseado na funcal anterior
+    x_new = np.linspace(0, 1, n)#novo eixo com 101 pontos baseado na funcal anterior
     return f(x_new)
 
 vicon_cycles = []
@@ -362,10 +343,6 @@ for i in range(len(vicon_peaks) - 1):       #tens a lista vicon_peaks ex.: vicon
 
 vicon_cycles = np.array(vicon_cycles)
 
-print("Número de picos:", len(vicon_peaks))
-print("Picos:", vicon_peaks)
-
-print("Número de ciclos:", len(vicon_cycles))
 vicon_mean = np.mean(vicon_cycles, axis=0)
 vicon_std = np.std(vicon_cycles, axis=0)
 
@@ -384,39 +361,28 @@ peaks, _ = find_peaks(
 )
 
 
-peaks = peaks[::2]  #primeira perna(direita) // divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
-#peaks = peaks[1::2]  #segunda perna(esquerda) // adicionar ali o 1 para ler os picos mais altos em vez de os mais baixos
+#peaks = peaks[::2]  #primeira perna(direita) // divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
+peaks = peaks[1::2]  #segunda perna(esquerda) // adicionar ali o 1 para ler os picos mais altos em vez de os mais baixos
 
 
 
-#para coordenada x ankle direita
-#vicon_ankle_norm = zscore(vicon_ankle_dist_smooth)
-#vicon_right_x_norm = zscore(vicon_right_ankle_x_smooth)
 
 # Grafico ankle distance VICON-----------------
 plt.figure(figsize=(12,5))
 
 plt.plot(
-    vicon_ankle_dist_smooth,
+    #vicon_ankle_dist_smooth,                 
+    vicon_ankle_dist,
     label="Vicon ankle distance",
     color="blue"
 )
 
-#plt.plot(
-#    vicon_right_ankle_x_smooth,
-#    label="Right ankle X",
-#    color="orange"
-#)
 
-#plt.plot(
-#    vicon_left_ankle_x_smooth,
-#    label="Left ankle X",
-#    color="purple"
-#)
 
 plt.scatter(
     vicon_peaks,
-    vicon_ankle_dist_smooth[vicon_peaks],
+    #vicon_ankle_dist_smooth[vicon_peaks],
+    vicon_ankle_dist[vicon_peaks],                
     color="red",
     s=50,
     label="Detected peaks"
@@ -438,39 +404,12 @@ plt.grid()
 plt.show()
 #fim grafico vicon ank dist-----
 
-#grafico linhas-------------------
-#plt.figure(figsize=(12,4))
 
-#plt.plot(df["time_sec"], df["ankle_dist_smooth"])
-
-#plt.scatter(
-#    df["time_sec"][peaks],
-#    df["ankle_dist_smooth"][peaks],
-#    color="red"
-#)
-
-#for p in peaks:
-#    plt.axvline(df["time_sec"].iloc[p], color="red", alpha=0.3)
-
-#plt.show()
-#fim grafico linhas-----------
 
 all_peaks, _ = find_peaks(
     df["ankle_dist_smooth"]
 )
 
-
-#zscore da comparacao de coordenada x right ankle e ankle dist
-#ankle_norm = zscore(df["ankle_dist_smooth"])
-#right_x_norm = zscore(df["right_ankle_x_smooth"])
-
-#plt.figure(figsize=(12,4))
-
-#plt.plot(df["time_sec"], ankle_norm, label="Ankle distance")
-#plt.plot(df["time_sec"], right_x_norm, label="Right ankle X")
-#plt.xlabel("Ankle distance and right ankle x Coordinate comparison")
-#plt.legend()
-#plt.show()
 
 
 plt.figure(figsize=(12,4))
@@ -529,27 +468,6 @@ df.loc[peaks, "is_peak"] = 1
 
 
 #----------------------------------PLOTS
-#GRAFICO DIST ANKLES BOLAS VERMELHAS-------
-#plt.figure(figsize=(12,5))
-
-#plt.plot(df["time_sec"], df["ankle_dist_smooth"], label="Ankle smooth")
-
-#plt.scatter(
-#    df["time_sec"][peaks],
-#    df["ankle_dist_smooth"][peaks],
-#    color="red",
-#    label="Peaks"
-#)
-
-#plt.xlabel("Time (s)")
-#plt.ylabel("Ankle distance")
-#plt.legend()
-#plt.tight_layout()
-#plt.xlim(0, 10)  # mostra só os primeiros 10 segundos
-#plt.savefig(r"C:\Users\joaov\Desktop\TFM\FotoBolasVermelhas1.png")
-#plt.show()
-#plt.close()
-
 
 
 x = np.linspace(0, 100, 101)
