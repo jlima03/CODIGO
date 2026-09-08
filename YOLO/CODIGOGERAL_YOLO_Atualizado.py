@@ -44,7 +44,7 @@ def angle3D(a, b, c):
 
 
 
-video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba5L.mp4"
+video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba2L.mp4"
 
 cap = cv2.VideoCapture(video_path)
 fps = cap.get(cv2.CAP_PROP_FPS)
@@ -56,7 +56,7 @@ data = []
 
 #Filtro Butterworth (igual tfm manuel)
 
-def butter_lowpass_filter(data, cutoff=6, fs=60, order=4):
+def butter_lowpass_filter(data, cutoff=6, fs=60, order=4):          #fs = 17 para prueba 3
     nyq = 0.5 * fs  #freq de nyquist (0.5*60=30hz)////divides por dois pelo teorema de nyquist
     normal_cutoff = cutoff / nyq    #=6hz/30hz=0.2
  
@@ -106,27 +106,27 @@ while True: #Percorre todos os frames
             left_shoulder = tuple(LS)
             
 
-            # CALCuLAR angulo right joelho ----------------
+            # CALCuLAR angulo right knee ----------------
             #ang = angle(right_hip, right_knee, right_ankle)
 
-            # CALCuLAR angulo left joelho ----------------
-            ang = angle(left_hip, left_knee, left_ankle)
+            # CALCuLAR angulo left knee ----------------
+            #ang = angle(left_hip, left_knee, left_ankle)
 
 
-            # CALCULAR angulo right tornozelo ----------------       # NAO HA ANKLE EM YOLO
+            # CALCULAR angulo right ankle ----------------       # No HAY ANKLE EM YOLO
             #ang = angle(right_knee, right_ankle, right_foot)
 
-            # CALCULAR angulo left tornozelo ----------------        # NAO HA ANKLE EM YOLO
+            # CALCULAR angulo left ankle ----------------        # No HAY ANKLE EM YOLO
             #ang = angle(left_knee, left_ankle, left_foot)
 
 
-            # CALCULAR angulo right anca ----------------
+            # CALCULAR angulo right hip ----------------
             #ang = angle(right_shoulder, right_hip, right_knee)
 
-            # CALCULAR angulo left anca ----------------
-            #ang = angle(left_shoulder, left_hip, left_knee)
+            # CALCULAR angulo left hip ----------------
+            ang = angle(left_shoulder, left_hip, left_knee)
 
-            ang=180-ang
+            ang=180-ang         # Ajuste de la convención angular para mantener la coherencia con el TFM de referencia y la literatura consultada
 
 
             #DISTANCIA TOBILHOS
@@ -161,7 +161,7 @@ df["ankle_dist_smooth"] = butter_lowpass_filter(df["ankle_dist"])
 #FAZER GRAFICO VICON------
 
 df_vicon = pd.read_excel(
-    r"C:\Users\joaov\Desktop\TFM\DadosAnalisados\VICON\CAPTURA05.xlsx",
+    r"C:\Users\joaov\Desktop\TFM\DadosAnalisados\VICON\CAPTURA02.xlsx",
     header=3
 )
 
@@ -236,22 +236,23 @@ for i in range(len(df_vicon)):
     #ang = angle3D(right_hip, right_knee, right_ankle)
 
     #CALCULAR ANG LEFT KNEE VICON
-    ang = angle3D(left_hip, left_knee, left_ankle)
+    #ang = angle3D(left_hip, left_knee, left_ankle)
 
 
     #CALCULAR ANG RIGHT ANKLE VICON
     #ang = angle3D(right_knee, right_ankle, right_toe)
 
     #CALCULAR ANG LEFT ANKLE VICON
-    #ang = angle3D(left_knee, left_ankle, left_toe)
+    #ang = angle3D(left_knee, left_ankle, left_toe)   
 
 
     #CALCULAR ANG RIGHT HIP VICON
     #ang = angle3D(right_shoulder, right_hip, right_knee)
 
     #CALCULAR ANG LEFT HIP VICON
-    #ang = angle3D(left_shoulder, left_hip, left_knee)
-    ang=180-ang
+    ang = angle3D(left_shoulder, left_hip, left_knee)
+
+    ang=180-ang     # Ajuste de la convención angular para mantener la coherencia con el TFM de referencia y la literatura consultada
     
     
     vicon_angles.append(ang)
@@ -267,15 +268,16 @@ vicon_angles = np.array(vicon_angles)
 
 vicon_ankle_dist = np.array(vicon_ankle_dist)
 
-vicon_ankle_dist_smooth = butter_lowpass_filter(
-    vicon_ankle_dist,
-    cutoff=6,
-    fs=120,
-    order=4
-)
+#vicon_ankle_dist_smooth = butter_lowpass_filter(
+#    vicon_ankle_dist,
+#    cutoff=6,
+#    fs=120,
+#    order=4
+#)
 
 vicon_peaks, _ = find_peaks(
-    vicon_ankle_dist_smooth,
+    #vicon_ankle_dist_smooth,
+    vicon_ankle_dist,
     distance=int(120 * 0.3),    #seleciona todos os picos
     prominence=0.01
     
@@ -328,8 +330,8 @@ peaks, _ = find_peaks(
     prominence=0.01            # ignora ruído pequeno
 )
 
-peaks = peaks[::2]  #primeira perna(direita) // divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
-#peaks = peaks[1::2]  #segunda perna(esquerda) // adicionar ali o 1 para ler os picos mais altos em vez de os mais baixos
+#peaks = peaks[::2]  #primeira perna(direita) // divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
+peaks = peaks[1::2]  #segunda perna(esquerda) // adicionar ali o 1 para ler os picos mais altos em vez de os mais baixos
 
 # Grafico ankle distance VICON-----------------
 
@@ -337,13 +339,15 @@ peaks = peaks[::2]  #primeira perna(direita) // divide todos os picos lidos por 
 plt.figure(figsize=(12,5))
 
 plt.plot(
-    vicon_ankle_dist_smooth,
+    #vicon_ankle_dist_smooth,
+    vicon_ankle_dist,
     label="Vicon ankle distance"
 )
 
 plt.scatter(
     vicon_peaks,
-    vicon_ankle_dist_smooth[vicon_peaks],
+    #vicon_ankle_dist_smooth[vicon_peaks],
+    vicon_ankle_dist[vicon_peaks],
     color="red",
     s=50,
     label="Detected peaks"
@@ -442,6 +446,24 @@ df["is_peak"] = 0
 df.loc[peaks, "is_peak"] = 1
 
 
+#TABELA
+
+from scipy.stats import pearsonr
+
+# MAE
+mae = np.mean(np.abs(mean - vicon_mean))
+
+# RMSE
+rmse = np.sqrt(np.mean((mean - vicon_mean) ** 2))
+
+# Correlação de Pearson
+r, _ = pearsonr(mean, vicon_mean)
+
+print(f"MAE: {mae:.3f}")
+print(f"RMSE: {rmse:.3f}")
+print(f"Pearson r: {r:.3f}")
+
+
 
 #----------------------------------PLOTS
 #GRAFICO DIST ANKLES BOLAS VERMELHAS-------
@@ -471,21 +493,21 @@ x = np.linspace(0, 100, 101)
 
 #PLOT NORMAL-----------(SEM ZSCCORE)
 
-#plt.figure(figsize=(10,5))
+plt.figure(figsize=(10,5))
 
- #MediaPipe
-#plt.plot(x, mean, label="MediaPipe", color="blue")
-#plt.fill_between(x, mean-std, mean+std, alpha=0.2, color="blue")
+ #YOLO
+plt.plot(x, mean, label="YOLO", color="blue")
+plt.fill_between(x, mean-std, mean+std, alpha=0.2, color="blue")
 
  #Vicon (vermelho por cima)
-#plt.plot(x, vicon_mean, label="Vicon", color="red")
-#plt.fill_between(x, vicon_mean-vicon_std, vicon_mean+vicon_std, alpha=0.2, color="red")
+plt.plot(x, vicon_mean, label="Vicon", color="red")
+plt.fill_between(x, vicon_mean-vicon_std, vicon_mean+vicon_std, alpha=0.2, color="red")
 
-#plt.xlabel("% gait cycle")
-#plt.ylabel("Angle (º)")
-#plt.legend()
-#plt.grid()
-#plt.show()
+plt.xlabel("% gait cycle")
+plt.ylabel("Angle (º)")
+plt.legend()
+plt.grid()
+plt.show()
 
 # NORMALIZAÇÃO (Z-score)--Tudo abaixo deste codigo é p ZSCORE ---------------------------------------
 mp_mean_z = zscore(mean)
@@ -496,21 +518,13 @@ vicon_std_z = vicon_std / np.std(vicon_mean)
 
 plt.figure(figsize=(10,5))
 
-# MediaPipe
+# YOLO
 plt.plot(x, mp_mean_z, label="YOLO (z-score)", color="blue")
-plt.fill_between(x,
-                 mp_mean_z - mp_std_z,
-                 mp_mean_z + mp_std_z,
-                 alpha=0.2,
-                 color="blue")
+plt.fill_between(x,mp_mean_z - mp_std_z,mp_mean_z + mp_std_z,alpha=0.2,color="blue")
 
 # Vicon
 plt.plot(x, vicon_mean_z, label="Vicon (z-score)", color="red")
-plt.fill_between(x,
-                 vicon_mean_z - vicon_std_z,
-                 vicon_mean_z + vicon_std_z,
-                 alpha=0.2,
-                 color="red")
+plt.fill_between(x,vicon_mean_z - vicon_std_z,vicon_mean_z + vicon_std_z,alpha=0.2,color="red")
 
 plt.xlabel("% gait cycle")
 plt.ylabel("Normalized angle (z-score)")

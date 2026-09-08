@@ -1,5 +1,6 @@
 import cv2
 import mediapipe as mp
+from ultralytics import YOLO
 import math
 import pandas as pd
 import numpy as np
@@ -41,13 +42,16 @@ def angle3D(a, b, c):
 
 mp_pose = mp.solutions.pose
 
-video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba8_left.mp4"
+video_path = r"C:\Users\joaov\Desktop\TFM\Videos_TFM\RawVideos\prueba2L.mp4"
 
 cap = cv2.VideoCapture(video_path)
 fps = cap.get(cv2.CAP_PROP_FPS)
 width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
 
 data = []
+data_yolo = []
+
+model = YOLO("yolo11n-pose.pt")
 
 
 
@@ -73,7 +77,66 @@ with mp_pose.Pose() as pose:
         if not ret:
             break
 
-        results = pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))#pose.process obtem keypoints, segunda parte converter para RGB(o q mediapipe usa)
+        results = pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))#pose.process obtem keypoints
+        yolo_results = model(frame, verbose=False)
+        yolo_result = yolo_results[0]
+
+        if yolo_result.keypoints is not None and len(yolo_result.keypoints) > 0:
+
+            kp = yolo_result.keypoints.xyn[0].cpu().numpy()
+
+            # Extrair estes pontos (articulacoes)
+                        
+            RH = kp[12]   # Right Hip
+            RK = kp[14]   # Right Knee
+            RA = kp[16]   # Right Ankle
+            RS = kp[6]    # Right Shoulder
+            LH = kp[11]   # Left Hip
+            LK = kp[13]   # Left Knee
+            LA = kp[15]   # Left Ankle
+            LS = kp[5]    # Left Shoulder
+
+            right_hip = tuple(RH)
+            right_knee = tuple(RK)
+            right_ankle = tuple(RA)
+            right_shoulder = tuple(RS)
+            left_hip = tuple(LH)
+            left_knee = tuple(LK)
+            left_ankle = tuple(LA)
+            left_shoulder = tuple(LS)
+
+            
+            # CALCuLAR angulo right knee ----------------
+            #ang_yolo = angle(right_hip, right_knee, right_ankle)
+            
+            # CALCuLAR angulo left knee ----------------
+            #ang_yolo = angle(left_hip, left_knee, left_ankle)
+            
+            
+            # CALCULAR angulo right ankle ----------------       # No HAY ANKLE EM YOLO
+            #ang_yolo = angle(right_knee, right_ankle, right_foot)
+            
+            # CALCULAR angulo left ankle ----------------        # No HAY ANKLE EM YOLO
+            #ang_yolo = angle(left_knee, left_ankle, left_foot)
+            
+            
+            # CALCULAR angulo right hip ----------------
+            #ang_yolo = angle(right_shoulder, right_hip, right_knee)
+            
+            # CALCULAR angulo left hip ----------------
+            ang_yolo = angle(left_shoulder, left_hip, left_knee)
+            
+                
+            
+
+            ang_yolo = 180 - ang_yolo   # # Ajuste de la convención angular para mantener la coherencia con el TFM de referencia y la literatura consultada
+
+            # distância horizontal entre tornozelos
+            ankle_dist_yolo = abs(RA[0] - LA[0])
+
+            time_sec_yolo = frame_idx / fps
+
+            data_yolo.append([time_sec_yolo,ang_yolo,ankle_dist_yolo])
 
         if results.pose_landmarks:
 
@@ -125,10 +188,10 @@ with mp_pose.Pose() as pose:
 
 
             # CALCULAR angulo right hip ----------------
-            ang = angle(right_shoulder, right_hip, right_knee)
+            #ang = angle(right_shoulder, right_hip, right_knee)
 
             # CALCULAR angulo left hip ----------------
-            #ang = angle(left_shoulder, left_hip, left_knee)
+            ang = angle(left_shoulder, left_hip, left_knee)
 
             ang=180-ang     # Ajuste de la convención angular para mantener la coherencia con el TFM de referencia y la literatura consultada
 
@@ -159,13 +222,26 @@ df = pd.DataFrame(data, columns=["time_sec", "angle", "ankle_dist"])
 df["angle_smooth"] = butter_lowpass_filter(df["angle"])
 df["ankle_dist_smooth"] = butter_lowpass_filter(df["ankle_dist"])
 
+df_yolo = pd.DataFrame(
+    data_yolo,
+    columns=["time_sec", "angle", "ankle_dist"]
+)
+
+df_yolo["angle_smooth"] = butter_lowpass_filter(
+    df_yolo["angle"]
+)
+
+df_yolo["ankle_dist_smooth"] = butter_lowpass_filter(
+    df_yolo["ankle_dist"]
+)
+
 
 
 
 #FAZER GRAFICO VICON------
 
 df_vicon = pd.read_excel(
-    r"C:\Users\joaov\Desktop\TFM\DadosAnalisados\VICON\CAPTURA08.xlsx",
+    r"C:\Users\joaov\Desktop\TFM\DadosAnalisados\VICON\CAPTURA02.xlsx",
     header=3
 )
 
@@ -258,10 +334,10 @@ for i in range(len(df_vicon)):
 
 
     # CALCULAR angulo right hip ----------------
-    ang = angle3D(right_shoulder, right_hip, right_knee)
+    #ang = angle3D(right_shoulder, right_hip, right_knee)
 
     # CALCULAR angulo left hip ----------------
-    #ang = angle3D(left_shoulder, left_hip, left_knee)
+    ang = angle3D(left_shoulder, left_hip, left_knee)
 
     ang=180-ang     # Ajuste de la convención angular para mantener la coherencia con el TFM de referencia y la literatura consultada
     
@@ -357,44 +433,52 @@ peaks, _ = find_peaks(
 #peaks = peaks[::2]  #primeira perna(direita) // divide todos os picos lidos por 2 (le todas as zancada com a mesma perna, neste caso, direita)
 peaks = peaks[1::2]  #segunda perna(esquerda) // adicionar ali o 1 para ler os picos mais altos em vez de os mais baixos
 
+peaks_yolo, _ = find_peaks(
+    df_yolo["ankle_dist_smooth"],
+    distance=int(fps * 0.3),
+    prominence=0.005
+)
+#peaks_yolo = peaks_yolo[::2]   #primeira perna
+peaks_yolo = peaks_yolo[1::2]   #segunda perna
+
 
 
 
 # Grafico ankle distance VICON-----------------
-plt.figure(figsize=(12,5))
+#plt.figure(figsize=(12,5))
 
-plt.plot(
-    #vicon_ankle_dist_smooth,                 
-    vicon_ankle_dist,
-    label="Vicon ankle distance",
-    color="blue"
-)
+#plt.plot(
+#    #vicon_ankle_dist_smooth,                 
+#    vicon_ankle_dist,
+#    label="Vicon ankle distance",
+#    color="blue"
+#)
 
 
 
-plt.scatter(
-    vicon_peaks,
-    #vicon_ankle_dist_smooth[vicon_peaks],
-    vicon_ankle_dist[vicon_peaks],                
-    color="red",
-    s=50,
-    label="Detected peaks"
-)
+#plt.scatter(
+#    vicon_peaks,
+#    #vicon_ankle_dist_smooth[vicon_peaks],
+#    vicon_ankle_dist[vicon_peaks],                
+#    color="red",
+#    s=50,
+#    label="Detected peaks"
+#)
 
-for p in vicon_peaks:
-    plt.axvline(
-        p,
-        color="red",
-        alpha=0.3
-    )
+#for p in vicon_peaks:
+#    plt.axvline(
+#        p,
+#        color="red",
+#        alpha=0.3
+#    )
 
-plt.xlabel("Frame")
-plt.ylabel("Ankle distance")
-plt.title("Vicon gait segmentation")
-plt.legend()
-plt.grid()
+#plt.xlabel("Frame")
+#plt.ylabel("Ankle distance")
+#plt.title("Vicon gait segmentation")
+#plt.legend()
+#plt.grid()
 
-plt.show()
+#plt.show()
 #fim grafico vicon ank dist-----
 
 
@@ -405,29 +489,29 @@ all_peaks, _ = find_peaks(
 
 
 
-plt.figure(figsize=(12,4))
+#plt.figure(figsize=(12,4))
 
 #dist entre tornozelos
-plt.plot(df["time_sec"], df["ankle_dist_smooth"],label="Ankle distance",color="blue")
+#plt.plot(df["time_sec"], df["ankle_dist_smooth"],label="Ankle distance",color="blue")
 
-plt.scatter(
-    df["time_sec"][all_peaks],
-    df["ankle_dist_smooth"][all_peaks],
-    color="green",
-    s=20,
-    label="all peaks"
-)
+#plt.scatter(
+#    df["time_sec"][all_peaks],
+#    df["ankle_dist_smooth"][all_peaks],
+#    color="green",
+#    s=20,
+#    label="all peaks"
+#)
 
-plt.scatter(
-    df["time_sec"][peaks],
-    df["ankle_dist_smooth"][peaks],
-    color="red",
-    s=50,
-    label="selected peaks"
-)
+#plt.scatter(
+#    df["time_sec"][peaks],
+#    df["ankle_dist_smooth"][peaks],
+#    color="red",
+#    s=50,
+#    label="selected peaks"
+#)
 
-plt.legend()
-plt.show()
+#plt.legend()
+#plt.show()
 
 
 
@@ -454,6 +538,28 @@ cycles = np.array(cycles)
 
 mean = np.mean(cycles, axis=0)    #media
 std = np.std(cycles, axis=0)  #desvio padrao
+
+
+cycles_yolo = []
+
+for i in range(len(peaks_yolo) - 1):
+
+    start = peaks_yolo[i]
+    end = peaks_yolo[i + 1]
+
+    stride = df_yolo["angle_smooth"].iloc[start:end].values
+
+    if len(stride) < 10:
+        continue
+
+    norm = normalize(stride)
+
+    cycles_yolo.append(norm)
+
+cycles_yolo = np.array(cycles_yolo)
+
+mean_yolo = np.mean(cycles_yolo, axis=0)
+std_yolo = np.std(cycles_yolo, axis=0)
 
 df["is_peak"] = 0
 df.loc[peaks, "is_peak"] = 1
@@ -491,6 +597,10 @@ plt.figure(figsize=(10,5))
 plt.plot(x, mean, label="MediaPipe", color="blue")
 plt.fill_between(x, mean-std, mean+std, alpha=0.2, color="blue")
 
+#yolo
+plt.plot(x,mean_yolo,label="YOLO", color="green")
+plt.fill_between(x,mean_yolo-std_yolo,mean_yolo+std_yolo,alpha=0.2,color="green")
+
  #Vicon (vermelho por cima)
 plt.plot(x, vicon_mean, label="Vicon", color="red")
 plt.fill_between(x, vicon_mean-vicon_std, vicon_mean+vicon_std, alpha=0.2, color="red")
@@ -508,11 +618,18 @@ mp_std_z = std / np.std(mean)
 vicon_mean_z = zscore(vicon_mean)
 vicon_std_z = vicon_std / np.std(vicon_mean)
 
+yolo_mean_z = zscore(mean_yolo)
+yolo_std_z = std_yolo / np.std(mean_yolo)
+
 plt.figure(figsize=(10,5))
 
 # MediaPipe
 plt.plot(x, mp_mean_z, label="MediaPipe (z-score)", color="blue")
 plt.fill_between(x,mp_mean_z - mp_std_z,mp_mean_z + mp_std_z,alpha=0.2,color="blue")
+
+# YOLO
+plt.plot(x, yolo_mean_z, label="YOLO (z-score)", color="green")
+plt.fill_between(x,yolo_mean_z - yolo_std_z,yolo_mean_z + yolo_std_z,alpha=0.2,color="green")
 
 # Vicon
 plt.plot(x, vicon_mean_z, label="Vicon (z-score)", color="red")
